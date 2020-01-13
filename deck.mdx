@@ -38,6 +38,62 @@ export const theme = shadesOfPurple;
 
 ---
 
+<CodeSurfer>
+
+```go title="This is a title" subtitle="and this a subtitle"
+    // Register standard Go metric collectors, which are by default registered when using global registry.
+	reg.MustRegister(
+		prometheus.NewGoCollector(),
+		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
+        func() float64 { return float64(*maxObjectsCount) }),
+	)
+```
+
+```go title="This is a title" subtitle="and this a subtitle" 1 5:8,9[1:10]
+    // Register standard Go metric collectors, which are by default registered when using global registry.
+	reg.MustRegister(
+		prometheus.NewGoCollector(),
+		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
+		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "configured_max_objects",
+			Help:      "Configured maximum number of objects cache can take.",
+		}, func() float64 { return float64(*maxObjectsCount) }),
+	)
+```
+
+</CodeSurfer>
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+<CodeSurfer>
+
+```go
+    mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+    mux.Handle("/set", http.HandlerFunc(c.SetHandler))
+    mux.Handle("/get", http.HandlerFunc(c.GetHandler))
+```
+
+```diff 1 subtitle="metrics"
+
+```
+
+```diff 2 subtitle="set"
+
+```
+
+```diff 3 subtitle="get"
+
+```
+
+</CodeSurfer>
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
 ## Holy battle; pull vs push
 
 <Notes>Create speaker notes with the Notes component</Notes>
