@@ -1,14 +1,15 @@
 {
   "private": true,
-  "name": "foo",
   "version": "1.0.0",
   "scripts": {
     "start": "mdx-deck deck.mdx",
-    "dev": "mdx-deck deck.mdx --port $PORT",
     "build": "mdx-deck build deck.mdx",
+    "test": "echo \"there are no tests\"",
     "help": "mdx-deck"
   },
   "devDependencies": {
-    "mdx-deck": "^3.0.8"
-  }
+    "code-surfer": "3.0.0",
+    "mdx-deck": "3.0.13"
+  },
+  "name": "are-you-testing-your-observability"
 }

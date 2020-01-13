@@ -1,24 +1,182 @@
-import { Head, Notes } from 'mdx-deck'
-import { theme } from './theme'
+import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer";
+import { Head, Notes } from "mdx-deck";
+import { github, vsDark, shadesOfPurple } from "@code-surfer/themes";
 
-export const themes = [ theme ]
+export const theme = shadesOfPurple;
 
-<Head>
-  <title>Presentation Title</title>
-</Head>
-
-# Hello
+# Are you testing your Observability? 👋
 
 ---
 
-## Edit this file
+# What is observability
 
-To create your presentation
-
-<Notes>
-Create speaker notes with the Notes component
-</Notes>
+<Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-<https://github.com/jxnblk/mdx-deck>
+## Why Prometheus?
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Signals
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Metrics are essential
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Prometheus - How to expose?
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Holy battle; pull vs push
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Instrumenting Go applications
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Common pitfalls
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Globals
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Intro: define metric; register; expose HTTP; usage
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Problems: terrible for libs
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Solution: custom registered
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Counter vs Gauges
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Problems ??
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Queue size vs added/removed?
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Gauge, reset etc loss of info
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Histogram vs Summaries
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Yolo histogram buckets
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Not SLO based
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Random string in labels
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## No Testing
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Hardcoding namespace in libraries/package
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## WrapRegisterer
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Not using middlewares
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Solution:
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Reuse internally
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## Convention/reuse dashboards; mixins!
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+## ~~Q/A~~
+# Discussion
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+docs:
+
+# TODO
