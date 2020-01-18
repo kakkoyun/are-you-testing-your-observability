@@ -1,10 +1,44 @@
-import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer";
-import { Head, Notes } from "mdx-deck";
-import { github, vsDark, shadesOfPurple } from "@code-surfer/themes";
+import { Head, Image, Appear, Notes } from "mdx-deck"
 
-export const theme = shadesOfPurple;
+import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer"
+import { github, vsDark,shadesOfPurple } from "@code-surfer/themes"
 
-# Are you testing your Observability? 👋
+import thanos from './static/thanos_logo.svg'
+import prometheus from './static/prometheus_logo.svg'
+import redhat from './static/red_hat_logo.png'
+
+export const theme = github;
+
+<Head>
+	<title>Are you testing your Observability?</title>
+</Head>
+
+# Are you testing your Observability?
+### GoDays 2020, Berlin
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+<Image src={prometheus} size='contain'/>
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+<Image src={thanos} size='90%'/>
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+<Image src={redhat} size='auto'/>
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+![](./static/ss_01.png)
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
@@ -235,6 +269,6 @@ export const theme = shadesOfPurple;
 
 ---
 
-docs:
+Reference:
+*
 
-# TODO
