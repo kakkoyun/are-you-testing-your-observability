@@ -1,7 +1,7 @@
-import { Head, Image, Appear, Notes } from "mdx-deck"
+import { Head, Image, Appear, Notes, Invert, Split } from "mdx-deck"
 
 import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer"
-import { github, vsDark,shadesOfPurple } from "@code-surfer/themes"
+import { github, oceanicNext } from "@code-surfer/themes"
 
 import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
@@ -13,68 +13,116 @@ export const theme = github;
 	<title>Are you testing your Observability?</title>
 </Head>
 
+<Invert>
+
 # Are you testing your Observability?
 ### GoDays 2020, Berlin
+#### 22.01.2020
 
-<Notes>Create speaker notes with the Notes component</Notes>
+</Invert>
+
+<Notes>
+
+Introduction
+
+</Notes>
 
 ---
 
 <Image src={prometheus} size='contain'/>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+Who are we?
+Bartek Prometheus maintainer
+</Notes>
 
 ---
 
 <Image src={thanos} size='90%'/>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+Bartek Thanos creator and maintainer
+Kemal Thanos contributor
+</Notes>
 
 ---
 
 <Image src={redhat} size='auto'/>
 
+<Notes>
+
+We work for Red Hat.
+We are building scalable Observability solutions and platforms for OpenShift.
+We work with Prometheus and Thanos on a daily basis.
+
+</Notes>
+
+---
+
+<Invert>
+
+<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/ss_01.png" style="height: 90%"/>
+
+</Invert>
+
+<Notes>
+
+This is Kemal's first talk.
+That's why we worked very hard... (sarcasm)
+
+</Notes>
+
+---
+
+# What is observability?
+
+<Notes>
+
+* Pillars of Observability
+	* Metrics, Logging, Tracing
+	* Aggregatable, Discrete Events, Request-scoped
+* Proactive, Reactive
+* Value of Observability
+
+</Notes>
+
+---
+
+<Split>
+
+![](https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/prometheus_logo.png)
+
+# Why Prometheus?
+
+</Split>
+
+<Notes>
+	Because Prometheus is
+</Notes>
+
+---
+
+# Signals
+
+<Notes>
+# Why Prometheus?
+</Notes>
+
+---
+
+# Metrics are essential
+
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-![](./static/ss_01.png)
+# Prometheus - How to expose?
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-# What is observability ⛷
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-## Why Prometheus? 🎿
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-## Signals 🏂
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-## Metrics are essential ☃️
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-## Prometheus - How to expose? ❄️
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-<CodeSurfer>
+<CodeSurfer theme={oceanicNext}>
 
 ```go title="This is a title" subtitle="and this a subtitle"
     // Register standard Go metric collectors, which are by default registered when using global registry.
@@ -104,7 +152,7 @@ export const theme = github;
 
 ---
 
-<CodeSurfer>
+<CodeSurfer theme={oceanicNext}>
 
 ```go
     mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
@@ -130,145 +178,181 @@ export const theme = github;
 
 ---
 
-## Holy battle; pull vs push
+# Holy battle; pull vs push
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Instrumenting Go applications
+# Instrumenting Go applications
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Common pitfalls
+# Common pitfalls
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Globals
+# Globals
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Intro: define metric; register; expose HTTP; usage
+# Intro: define metric; register; expose HTTP; usage
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Problems: terrible for libs
+# Problems: terrible for libs
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Solution: custom registered
+# Solution: custom registered
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Counter vs Gauges
+# Counter vs Gauges
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Problems ??
+# Problems ??
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Queue size vs added/removed?
+# Queue size vs added/removed?
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Gauge, reset etc loss of info
+# Gauge, reset etc loss of info
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Histogram vs Summaries
+# Histogram vs Summaries
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Yolo histogram buckets
+# Yolo histogram buckets
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Not SLO based
+# Not SLO based
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Random string in labels
+# Random string in labels
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## No Testing
+# No Testing
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Hardcoding namespace in libraries/package
+# Hardcoding namespace in libraries/package
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## WrapRegisterer
+# WrapRegisterer
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Not using middlewares
+# Not using middlewares
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Solution:
+# Solution:
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Reuse internally
+# Reuse internally
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## Convention/reuse dashboards; mixins!
+# Convention/reuse dashboards; mixins!
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-## ~~Q/A~~
+# ~~Q/A~~
 # Discussion
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
 
-Reference:
-*
 
+<Split>
+
+<span>
+
+![](https://avatars3.githubusercontent.com/u/6950331?s=360)
+
+### Bartek Plotka
+	twitter.com/bwplotka
+	github.com/bwplotka
+
+</span>
+
+<div>
+
+
+![](https://avatars0.githubusercontent.com/u/536449?s=360)
+
+### Kemal Akkoyun
+	twitter.com/kkakkoyun
+	github.com/kkakkoyun
+
+</div>
+
+</Split>
+
+---
+
+# Thank you!
+
+<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/red_hat_logo.png" style="height: 20%"/>
+
+---
+
+Reference:
+* [Observable Demo](https://github.com/observatorium/observable-demo)
+* [Slides](https://github.com/kakkoyun/are-you-testing-your-observability)
+* [Thanos](https://thanos.io)
+* [Prometheus](https://prometheus.io)
