@@ -90,7 +90,7 @@ That's why we worked very hard... (sarcasm)
 
 <Split>
 
-![](https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/prometheus_logo.png)
+<Image src={prometheus} size='auto'/>
 
 # Why Prometheus?
 
@@ -122,62 +122,6 @@ That's why we worked very hard... (sarcasm)
 
 ---
 
-<CodeSurfer theme={oceanicNext}>
-
-```go title="This is a title" subtitle="and this a subtitle"
-    // Register standard Go metric collectors, which are by default registered when using global registry.
-	reg.MustRegister(
-		prometheus.NewGoCollector(),
-		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
-        func() float64 { return float64(*maxObjectsCount) }),
-	)
-```
-
-```go title="This is a title" subtitle="and this a subtitle" 1 5:8,9[1:10]
-    // Register standard Go metric collectors, which are by default registered when using global registry.
-	reg.MustRegister(
-		prometheus.NewGoCollector(),
-		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
-		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "configured_max_objects",
-			Help:      "Configured maximum number of objects cache can take.",
-		}, func() float64 { return float64(*maxObjectsCount) }),
-	)
-```
-
-</CodeSurfer>
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-<CodeSurfer theme={oceanicNext}>
-
-```go
-    mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-    mux.Handle("/set", http.HandlerFunc(c.SetHandler))
-    mux.Handle("/get", http.HandlerFunc(c.GetHandler))
-```
-
-```diff 1 subtitle="metrics"
-
-```
-
-```diff 2 subtitle="set"
-
-```
-
-```diff 3 subtitle="get"
-
-```
-
-</CodeSurfer>
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
 # Holy battle; pull vs push
 
 <Notes>Create speaker notes with the Notes component</Notes>
@@ -203,6 +147,81 @@ That's why we worked very hard... (sarcasm)
 ---
 
 # Intro: define metric; register; expose HTTP; usage
+
+---
+
+<CodeSurfer theme={oceanicNext}>
+
+```go title="Collectors are your frinends"
+    // Register standard Go metric collectors, which are by default registered when using global registry.
+	reg.MustRegister(
+		version.NewCollector("observable-demo"),
+	)
+```
+
+```go title="Collectors are your frinends"
+    // Register standard Go metric collectors, which are by default registered when using global registry.
+	reg.MustRegister(
+		version.NewCollector("observable-demo"),
+		prometheus.NewBuildInfoCollector(),
+	)
+```
+
+```go title="Collectors are your frinends"
+    // Register standard Go metric collectors, which are by default registered when using global registry.
+	reg.MustRegister(
+		version.NewCollector("observable-demo"),
+		prometheus.NewBuildInfoCollector(),
+		prometheus.NewGoCollector(),
+	)
+```
+
+```go title="Collectors are your frinends"
+    // Register standard Go metric collectors, which are by default registered when using global registry.
+	reg.MustRegister(
+		version.NewCollector("observable-demo"),
+		prometheus.NewBuildInfoCollector(),
+		prometheus.NewGoCollector(),
+		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
+	)
+```
+
+</CodeSurfer>
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+<CodeSurfer theme={oceanicNext}>
+
+```go title="Functions"
+    // Register standard Go metric collectors, which are by default registered when using global registry.
+	reg.MustRegister(
+		version.NewCollector("observable-demo"),
+		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+			Name: "configured_failed_target_backoff_duration_seconds",
+			Help: "Configured backoff time for unavailable target.",
+		}, func() float64 { return blacklistBackoff.Seconds() }), // nolint: gocritic
+	)
+```
+
+</CodeSurfer>
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+<CodeSurfer theme={oceanicNext}>
+
+```go title="Register Handler"
+    mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+```
+
+```diff 1 subtitle="expose metrics"
+
+```
+
+</CodeSurfer>
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
@@ -282,6 +301,36 @@ That's why we worked very hard... (sarcasm)
 
 # WrapRegisterer
 
+<CodeSurfer theme={oceanicNext}>
+
+```go
+// WrapRegistererWithPrefix is like prometheus.WrapRegistererWithPrefix but it passes nil straight through
+// which allows nil check.
+func WrapRegistererWithPrefix(prefix string, reg prometheus.Registerer) prometheus.Registerer {
+	if reg == nil {
+		return nil
+	}
+
+	return prometheus.WrapRegistererWithPrefix(prefix, reg)
+}
+```
+</CodeSurfer>
+
+<CodeSurfer theme={oceanicNext}>
+
+```go
+// WrapRegistererWith is like prometheus.WrapRegistererWith but it passes nil straight through
+// which allows nil check.
+func WrapRegistererWith(labels prometheus.Labels, reg prometheus.Registerer) prometheus.Registerer {
+	if reg == nil {
+		return nil
+	}
+
+	return prometheus.WrapRegistererWith(labels, reg)
+}
+```
+</CodeSurfer>
+
 <Notes>Create speaker notes with the Notes component</Notes>
 
 ---
@@ -304,7 +353,13 @@ That's why we worked very hard... (sarcasm)
 
 ---
 
-# Convention/reuse dashboards; mixins!
+# Convention/reuse dashboards; monitoring-mixins!
+
+<Notes>Create speaker notes with the Notes component</Notes>
+
+---
+
+# extra: Promtool and alert testing!
 
 <Notes>Create speaker notes with the Notes component</Notes>
 
