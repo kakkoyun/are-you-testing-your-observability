@@ -15,10 +15,7 @@ _Live Example: https://are-you-testing-your-observability.now.sh_
 ## Development
 
 ```console
-$ npm install
-# or yarn install
-
-$ npm i -g now # only needed for deployment
+npm install # or yarn install
 ```
 
 See tutorial on [How to create slides](https://github.com/pomber/code-surfer#how-to-use-code-surfer)
@@ -26,21 +23,7 @@ See tutorial on [How to create slides](https://github.com/pomber/code-surfer#how
 ### Run locally
 
 ```console
-
 npm start
-
-```
-
-### Deploy Stage
-
-```console
-$ now
-```
-
-### Deploy Prod
-
-```console
-$ now --prod
 ```
 
 ### Export to PDF
@@ -56,8 +39,27 @@ To export PDF from local deck, run:
 ```console
 npm start
 ```
+
 and then in another terminal:
 
 ```console
 npm run pdf-local
+```
+
+## Deploy
+
+```console
+npm i -g now # only needed for deployment
+```
+
+### Stage
+
+```console
+now
+```
+
+### Prod
+
+```console
+now --prod
 ```
