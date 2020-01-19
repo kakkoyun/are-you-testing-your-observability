@@ -374,10 +374,10 @@ if reg != nil {
 	)
 }
 
-m.failures.WithLabelValues(failedUnknown)
-m.failures.WithLabelValues(failedNoTargetAvailable)
-m.failures.WithLabelValues(failedTimeout)
-m.failures.WithLabelValues(failedNoTargetResolved)
+m.failures.WithLabelValues("failedUnknown")
+m.failures.WithLabelValues("failedNoTargetAvailable")
+m.failures.WithLabelValues("failedTimeout")
+m.failures.WithLabelValues("failedNoTargetResolved")
 
 return m
 
