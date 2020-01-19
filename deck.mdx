@@ -17,14 +17,18 @@ export const theme = shadesOfPurple;
 
 <CodeSurfer theme={shadesOfPurple}>
 
-```go 6[17:53],7[17:37]
+```go 6[17:53],7[17:53],11[17:53]
 package main
 
 import "fmt"
 
 func main() {
 	fmt.Println("Are you testing your Observability?")
-	fmt.Println("GoDays 2020, Berlin")
+	fmt.Println("      --- Metrics Edition ---      ")
+
+
+
+	fmt.Println("    GoDays 22.01.2020, Berlin      ")
 }
 ```
 
@@ -34,89 +38,108 @@ func main() {
 
 Hello everyone!
 
+We are extremely excited to be here in GoDays conference, and be able to speak about topics we both love:
+
+* observability
+* programming in go
+
+At the end of this talk we would like you to know:
+
+* why instrumenting Go applications with actionable metrics is essential
+* how to do it quickly and smoothly in Go, how to test it
+* last but not the least: what are the common mistakes you should avoid, mistakes that
+we seen a lot during our work with Go and metrics in WILD open source WORLD.
+
+But before that: Short introduction!
+
 </Notes>
 
 ---
 
-
-
 <div style="width: 100%; height: 50%; overflow: auto;">
-
 <img src="https://storage.googleapis.com/gopherizeme.appspot.com/gophers/1a34872cf0ec375b9fc44ce654fc03a5abc42dc4.png" style="height: 90%; float: left;"/>
 
-### Bartek Plotka
-	Principal Software Engineer @ Red Hat
-	OpenShift Monitoring Team
-	Prometheus and Thanos Maintainer
+#### Bartek Plotka
 
-{<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/twitter.png" style="height: 40px; width: 40px;"/>|<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/github.png" style="height: 40px; width: 40px;"/>}/bwplotka
+<div style="font-size: 80%">
+Principal Software Engineer @ Red Hat<br/>
+OpenShift Monitoring Team<br/>
+Prometheus and Thanos Maintainer<br/><br/>
 
+<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/twitter.png" style="height: 40px; width: 40px;"/> <img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/github.png" style="height: 40px; width: 40px;"/> @bwplotka
+</div>
 </div>
 
 <div style="width: 100%; height: 50%; overflow: auto;">
-
 <img src="https://storage.googleapis.com/gopherizeme.appspot.com/gophers/9806438d5acfb3a108eeaab302de0e32f8a489ad.png" style="height: 90%; float: left;"/>
 
+#### Kemal Akkoyun
 
-### Kemal Akkoyun
-	Software Engineer @ Red Hat
-	OpenShift Monitoring Team
-	Thanos Contributor
+<div style="font-size: 80%">
+Software Engineer @ Red Hat<br/>
+OpenShift Monitoring Team<br/>
+Thanos Contributor<br/><br/>
 
-<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/twitter.png" style="height: 40px; width: 40px;"/>/kkakkoyun  <span/>
-<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/github.png" style="height: 40px; width: 40px;"/>/kakkoyun
-
+<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/twitter.png" style="height:40px; width: 40px;"/> @kkakkoyun <span/>
+<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/github.png" style="height: 40px; width: 40px;"/> @kakkoyun
+</div>
 </div>
 
-
-
 <Notes>
-Introduce yourselves!
+
+My name is Bartek Plotka, I am an engineer working at Red Hat in the Monitoring team, I love open source and Go.
+I am in Prometheus team and I am a co-author of Thanos project, which is a durable system for scaling Prometheus.
+
+With me there is Kemal: Kemal TODO intro
+
 </Notes>
 
 ---
 
-<Image src={prometheus} size='50%'/>
+<div style="width: 100%; height: 50%; overflow: auto;">
+<img src={prometheus} style="height: 50%; margin: auto; display: block; margin-top: 100px;" />
+</div>
+
+<div style="width: 100%; height: 50%; overflow: auto;">
+<img src={thanos} style="height: 50%; margin: auto; display: block; margin-top: 100px;" />
+</div>
 
 <Notes>
-TODO
 
-We work for Red Hat.
+We are both working in the same monitoring team for Red Hat.
 We are building scalable Observability solutions and platforms for OpenShift.
-We work with Prometheus and Thanos on a daily basis.
+But also as one of the major part of our work is maintaing Prometheus and Thanos projects on a daily basis.
+
 </Notes>
 
 ---
 
-<Image src={thanos} size='90%'/>
+Let's implement L7 loadbalancer in Go! ❤️
+
+<Appear>
+   <p>image L7 todo</p>
+</Appear>
 
 <Notes>
 
-TODO: notes
-Bartek Thanos creator and maintainer
-Kemal Thanos contributor
+Bartek todo
 
 </Notes>
 
 ---
 
-## Let's implement L7 loadbalancer in Go! ❤️
+Are we not missing something?
 
-<Notes>
-
-TODO: notes
-
-</Notes>
-
----
-
-<CodeSurfer theme={shadesOfPurple}>
-
-```markdown
-# The Story
-```
-
-</CodeSurfer>
+<ul>
+<Appear>
+    <li>Can I be notified when no backend is available for users?</li>
+    <li>What is the distribution of request through backends now?</li>
+    <li>Why one backend is overloaded?</li>
+    <li>Something is slow, is it backend or latency of loadbalancing?</li>
+    <li>My node OOM-ed, how much resources loadbalancer even use?</li>
+    <li>What version of binary we were running 2 days ago at 2pm?</li>
+</Appear>
+</ul>
 
 <Notes>
 	Bartek
@@ -124,28 +147,9 @@ TODO: notes
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+Let's instrument our loadbalancer with Prometheus metrics!
 
-```markdown
-# Middlewares
-```
-
-</CodeSurfer>
-
-<Notes>
-	Bartek
-</Notes>
-
-
----
-
-<CodeSurfer theme={shadesOfPurple}>
-
-```markdown
-# Register
-```
-
-</CodeSurfer>
+todo diagram
 
 <Notes>
 	Bartek
@@ -153,91 +157,7 @@ TODO: notes
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
-
-```go title="Collectors are your friends"
-    // Register standard Go metric collectors, which are by default registered when using global registry.
-	reg.MustRegister(
-		version.NewCollector("observable-demo"),
-	)
-```
-
-```go title="Collectors are your friends"
-    // Register standard Go metric collectors, which are by default registered when using global registry.
-	reg.MustRegister(
-		version.NewCollector("observable-demo"),
-		prometheus.NewBuildInfoCollector(),
-	)
-```
-
-```go title="Collectors are your friends"
-    // Register standard Go metric collectors, which are by default registered when using global registry.
-	reg.MustRegister(
-		version.NewCollector("observable-demo"),
-		prometheus.NewBuildInfoCollector(),
-		prometheus.NewGoCollector(),
-	)
-```
-
-```go title="Collectors are your friends"
-    // Register standard Go metric collectors, which are by default registered when using global registry.
-	reg.MustRegister(
-		version.NewCollector("observable-demo"),
-		prometheus.NewBuildInfoCollector(),
-		prometheus.NewGoCollector(),
-		prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}),
-	)
-```
-
-</CodeSurfer>
-
-<Notes>
-
-</Notes>
-
----
-
-<CodeSurfer theme={shadesOfPurple}>
-
-```go title="Functions" 3:7
-    // Register standard Go metric collectors, which are by default registered when using global registry.
-	reg.MustRegister(
-		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-			Name: "configured_failed_target_backoff_duration_seconds",
-			Help: "Configured backoff time for unavailable target.",
-		}, func() float64 { return blacklistBackoff.Seconds() }),
-	)
-```
-
-</CodeSurfer>
-
-<Notes>
-
-</Notes>
-
----
-
-<CodeSurfer theme={shadesOfPurple}>
-
-```go title="Expose metrics"
-    mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-```
-
-</CodeSurfer>
-
-<Notes>
-
-</Notes>
-
----
-
-<CodeSurfer theme={shadesOfPurple}>
-
-```markdown
-# Hard-coding project names in libraries
-```
-
-</CodeSurfer>
+## Pitfalls #1: Globals
 
 <Notes>
 	Bartek
@@ -245,40 +165,26 @@ TODO: notes
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
-
-```markdown
-# Naming
-```
-
-</CodeSurfer>
+## Pitfalls #2: Can we reuse more?
 
 <Notes>
-	Bartek
+
+Middlewares/Tripperwares
+
 </Notes>
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
 
-```go title="WrapRegisterer"
-// WrapRegistererWithPrefix is like prometheus.WrapRegistererWithPrefix but it passes nil straight through
-// which allows nil check.
-prometheus.WrapRegistererWithPrefix(prefix, reg)
-```
+## Pitfalls #3: Naming of metrics
 
-</CodeSurfer>
+<Notes>
+
+</Notes>
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
-
-```go
-// WrapRegistererWith is like prometheus.WrapRegistererWith but it passes nil straight through
-// which allows nil check.
-prometheus.WrapRegistererWith(labels, reg)
-```
-</CodeSurfer>
+## Pitfalls #4: Hardcoding project names in metrics
 
 <Notes>
 
