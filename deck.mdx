@@ -288,8 +288,100 @@ prometheus.WrapRegistererWith(labels, reg)
 
 <CodeSurfer theme={shadesOfPurple}>
 
-```markdown
-# Not initializing Metrics
+```go title="Not initializing Metrics"
+m := &Metrics{
+	successes: prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem: "lbtransport",
+		Name:      "proxied_requests_total",
+		Help:      "Total number successful proxy round trips.",
+	}),
+	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "lbtransport",
+		Name:      "proxied_failed_requests_total",
+		Help:      "Total number failed proxy round trips.",
+	}, []string{"reason"}),
+	dialerMetrics: conntrack.NewDialerMetrics(reg),
+	httpMetrics:   exthttp.NewClientMetrics(reg),
+}
+
+if reg != nil {
+	reg.MustRegister(
+		m.successes,
+		m.failures,
+	)
+}
+
+return m
+```
+
+</CodeSurfer>
+
+---
+
+import uninitialized_metrics from './static/uninitialized_metrics.png'
+
+<Image src={uninitialized_metrics} size='contain'/>
+
+---
+
+<CodeSurfer theme={shadesOfPurple}>
+
+```go title="Not initializing Metrics"
+
+m := &Metrics{
+	successes: prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem: "lbtransport",
+		Name:      "proxied_requests_total",
+		Help:      "Total number successful proxy round trips.",
+	}),
+	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "lbtransport",
+		Name:      "proxied_failed_requests_total",
+		Help:      "Total number failed proxy round trips.",
+	}, []string{"reason"}),
+	dialerMetrics: conntrack.NewDialerMetrics(reg),
+	httpMetrics:   exthttp.NewClientMetrics(reg),
+}
+
+if reg != nil {
+	reg.MustRegister(
+		m.successes,
+		m.failures,
+	)
+}
+
+return m
+```
+
+```go title="Not initializing Metrics"
+
+m := &Metrics{
+	successes: prometheus.NewCounter(prometheus.CounterOpts{
+		Subsystem: "lbtransport",
+		Name:      "proxied_requests_total",
+		Help:      "Total number successful proxy round trips.",
+	}),
+	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "lbtransport",
+		Name:      "proxied_failed_requests_total",
+		Help:      "Total number failed proxy round trips.",
+	}, []string{"reason"}),
+	dialerMetrics: conntrack.NewDialerMetrics(reg),
+	httpMetrics:   exthttp.NewClientMetrics(reg),
+}
+
+if reg != nil {
+	reg.MustRegister(
+		m.successes,
+		m.failures,
+	)
+}
+
+m.failures.WithLabelValues(failedUnknown)
+m.failures.WithLabelValues(failedNoTargetAvailable)
+m.failures.WithLabelValues(failedTimeout)
+m.failures.WithLabelValues(failedNoTargetResolved)
+return m
 ```
 
 </CodeSurfer>
@@ -297,6 +389,12 @@ prometheus.WrapRegistererWith(labels, reg)
 <Notes>
 	Kemal
 </Notes>
+
+---
+
+import initialized_metrics from './static/initialized_metrics.png'
+
+<Image src={initialized_metrics} size='contain'/>
 
 ---
 
@@ -373,8 +471,6 @@ prometheus.WrapRegistererWith(labels, reg)
 # Thank you!
 
 <img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/red_hat_logo.png" style="height: 20%"/>
-
----
 
 Reference:
 * [Observable Demo](https://github.com/observatorium/observable-demo)
