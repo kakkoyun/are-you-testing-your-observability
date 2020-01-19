@@ -1,18 +1,19 @@
+import './styles.css'
+
 import { Head, Image, Appear, Notes, Invert, Split } from "mdx-deck"
 
 import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer"
-import { github, shadesOfPurple } from "@code-surfer/themes"
+import { oceanicNext, shadesOfPurple } from "@code-surfer/themes"
 
 import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
 import redhat from './static/red_hat_logo.png'
 
-export const theme = github;
+export const theme = oceanicNext;
 
 <Head>
 	<title>Are you testing your Observability?</title>
 </Head>
-
 
 <CodeSurfer theme={shadesOfPurple}>
 
@@ -29,13 +30,34 @@ func main() {
 
 </CodeSurfer>
 
+<Notes>
+  
+TODO: add names, twitter handles
+
+Hello everyone!
+
+</Notes>
+
+---
+
+TODO: our faces and 2 sentences.
+
+<Notes>
+  
+Who are we
+
+</Notes>
+
 ---
 
 <Image src={prometheus} size='50%'/>
 
 <Notes>
-Who are we?
-Bartek Prometheus maintainer
+TODO
+
+We work for Red Hat.
+We are building scalable Observability solutions and platforms for OpenShift.
+We work with Prometheus and Thanos on a daily basis.
 </Notes>
 
 ---
@@ -43,19 +65,20 @@ Bartek Prometheus maintainer
 <Image src={thanos} size='90%'/>
 
 <Notes>
+  
+TODO: notes
 Bartek Thanos creator and maintainer
 Kemal Thanos contributor
+
 </Notes>
 
 ---
 
-<Image src={redhat} size='auto'/>
+## Let's implement L7 loadbalancer in Go! ❤️
 
 <Notes>
 
-We work for Red Hat.
-We are building scalable Observability solutions and platforms for OpenShift.
-We work with Prometheus and Thanos on a daily basis.
+TODO:...
 
 </Notes>
 
@@ -72,7 +95,6 @@ We work with Prometheus and Thanos on a daily basis.
 <Notes>
 	Bartek
 </Notes>
-
 
 ---
 
