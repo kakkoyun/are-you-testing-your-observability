@@ -290,23 +290,15 @@ prometheus.WrapRegistererWith(labels, reg)
 
 ```go title="Not initializing Metrics"
 m := &Metrics{
-	successes: prometheus.NewCounter(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_requests_total",
-		Help:      "Total number successful proxy round trips.",
-	}),
 	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem: "lbtransport",
 		Name:      "proxied_failed_requests_total",
 		Help:      "Total number failed proxy round trips.",
 	}, []string{"reason"}),
-	dialerMetrics: conntrack.NewDialerMetrics(reg),
-	httpMetrics:   exthttp.NewClientMetrics(reg),
 }
 
 if reg != nil {
 	reg.MustRegister(
-		m.successes,
 		m.failures,
 	)
 }
@@ -332,28 +324,30 @@ import uninitialized_metrics from './static/uninitialized_metrics.png'
 
 ---
 
+import uninitialized_metrics_marked from './static/uninitialized_metrics_marked.png'
+
+<Image src={uninitialized_metrics_marked} size='contain'/>
+
+<Notes>
+	TODO: Kemal
+</Notes>
+
+---
+
 <CodeSurfer theme={shadesOfPurple}>
 
 ```go title="Not initializing Metrics"
 
 m := &Metrics{
-	successes: prometheus.NewCounter(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_requests_total",
-		Help:      "Total number successful proxy round trips.",
-	}),
 	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem: "lbtransport",
 		Name:      "proxied_failed_requests_total",
 		Help:      "Total number failed proxy round trips.",
 	}, []string{"reason"}),
-	dialerMetrics: conntrack.NewDialerMetrics(reg),
-	httpMetrics:   exthttp.NewClientMetrics(reg),
 }
 
 if reg != nil {
 	reg.MustRegister(
-		m.successes,
 		m.failures,
 	)
 }
@@ -364,23 +358,15 @@ return m
 ```go title="Not initializing Metrics"
 
 m := &Metrics{
-	successes: prometheus.NewCounter(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_requests_total",
-		Help:      "Total number successful proxy round trips.",
-	}),
 	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem: "lbtransport",
 		Name:      "proxied_failed_requests_total",
 		Help:      "Total number failed proxy round trips.",
 	}, []string{"reason"}),
-	dialerMetrics: conntrack.NewDialerMetrics(reg),
-	httpMetrics:   exthttp.NewClientMetrics(reg),
 }
 
 if reg != nil {
 	reg.MustRegister(
-		m.successes,
 		m.failures,
 	)
 }
@@ -403,6 +389,16 @@ return m
 import initialized_metrics from './static/initialized_metrics.png'
 
 <Image src={initialized_metrics} size='contain'/>
+
+<Notes>
+	TODO: Kemal
+</Notes>
+
+---
+
+import initialized_metrics_marked from './static/initialized_metrics_marked.png'
+
+<Image src={initialized_metrics_marked} size='contain'/>
 
 <Notes>
 	TODO: Kemal
