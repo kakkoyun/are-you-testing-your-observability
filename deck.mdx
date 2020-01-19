@@ -7,7 +7,21 @@ import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
 import redhat from './static/red_hat_logo.png'
 
+import BarChart from './components/bar_chart'
+
 export const theme = github;
+
+
+# Chart demo
+
+<BarChart data={[
+  [ 'React', 8 ],
+  [ 'React Native', 9 ],
+  [ 'Node', 8 ],
+  [ 'Linux', 7 ],
+  ]} />
+
+---
 
 <Head>
 	<title>Are you testing your Observability?</title>

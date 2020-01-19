@@ -14,5 +14,9 @@
     "mdx-deck": "3.0.13",
     "website-pdf": "^3.0.8"
   },
-  "name": "are-you-testing-your-observability"
+  "name": "are-you-testing-your-observability",
+  "dependencies": {
+    "chart.js": "^2.9.3",
+    "react-chartkick": "^0.4.0"
+  }
 }
