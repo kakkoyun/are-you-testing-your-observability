@@ -289,6 +289,7 @@ prometheus.WrapRegistererWith(labels, reg)
 <CodeSurfer theme={shadesOfPurple}>
 
 ```go title="Not initializing Metrics"
+
 m := &Metrics{
 	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem: "lbtransport",
@@ -304,6 +305,7 @@ if reg != nil {
 }
 
 return m
+
 ```
 
 </CodeSurfer>
@@ -353,6 +355,7 @@ if reg != nil {
 }
 
 return m
+
 ```
 
 ```go title="Not initializing Metrics"
@@ -375,7 +378,9 @@ m.failures.WithLabelValues(failedUnknown)
 m.failures.WithLabelValues(failedNoTargetAvailable)
 m.failures.WithLabelValues(failedTimeout)
 m.failures.WithLabelValues(failedNoTargetResolved)
+
 return m
+
 ```
 
 </CodeSurfer>
