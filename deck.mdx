@@ -1,7 +1,7 @@
 import { Head, Image, Appear, Notes, Invert, Split } from "mdx-deck"
 
 import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer"
-import { github, oceanicNext } from "@code-surfer/themes"
+import { github, shadesOfPurple } from "@code-surfer/themes"
 
 import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
@@ -13,23 +13,25 @@ export const theme = github;
 	<title>Are you testing your Observability?</title>
 </Head>
 
-<Invert>
 
-# Are you testing your Observability?
-### GoDays 2020, Berlin
-#### 22.01.2020
+<CodeSurfer theme={shadesOfPurple}>
 
-</Invert>
+```go 6[17:53],7[17:37]
+package main
 
-<Notes>
+import "fmt"
 
-Introduction
+func main() {
+	fmt.Println("Are you testing your Observability?")
+	fmt.Println("GoDays 2020, Berlin")
+}
+```
 
-</Notes>
+</CodeSurfer>
 
 ---
 
-<Image src={prometheus} size='contain'/>
+<Image src={prometheus} size='50%'/>
 
 <Notes>
 Who are we?
@@ -59,168 +61,60 @@ We work with Prometheus and Thanos on a daily basis.
 
 ---
 
-<Invert>
+<CodeSurfer theme={shadesOfPurple}>
 
-<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/ss_01.png" style="height: 90%"/>
+```markdown
+# The Story
+```
 
-</Invert>
-
-<Notes>
-
-This is Kemal's first talk.
-That's why we worked very hard... (sarcasm)
-
-</Notes>
-
----
-
-# Agenda
-
-#### (TODO: REMOVE!)
-
----
-
-## What is observability; Why Prometheus [5m-7m]
-* Signals
-* Metrics are essential.
-
-#### (TODO: REMOVE!)
-
----
-
-## Instrumenting Go applications; Common pitfalls
-* Globals [5m]
-* Expose HTTP
-* Define metrics
-* Register
-* Collectors are your friends
-* Problems: terrible for libs ???
-* Solution: custom registered ???
-* Counter vs Gauges: [2m]
-* Problems:
-* Queue size vs added/removed?
-* Gauge, reset etc loss of info
-* Histogram vs Summaries [2m]
-* Yolo histogram buckets [4m]
-* Not SLO based; flat
-* USE/RED Methods ??
-* Random string in labels; Cardinality [4m]
-* No Testing [4m]
-* Hardcoding namespace in libraries/package [2m]
-* WrapRegisterer
-* Not using middlewares [5m]
-* Solution: Reuse internally
-
-#### (TODO: REMOVE!)
-
----
-
-## Summary [2m]
-
-#### (TODO: REMOVE!)
-
----
-
-## Extras
-
-* Convention/reuse dashboards; mixins!
-* Testing your alerts!
-* Furthermore; logs, tracing...
-
-#### (TODO: REMOVE!)
-
----
-
-# What is observability?
+</CodeSurfer>
 
 <Notes>
-
-* Pillars of Observability
-
-* Metrics, Logging, Tracing
-* Aggregatable, Discrete Events, Request-scoped
-
-* Proactive, Reactive
-* Value of Observability
-
+	Bartek
 </Notes>
+
 
 ---
 
-# Signals
+<CodeSurfer theme={shadesOfPurple}>
+
+```markdown
+# Middlewares
+```
+
+</CodeSurfer>
 
 <Notes>
-
-* Pillars of Observability
-* Metrics, Logging, Tracing
-* Aggregatable, Discrete Events, Request-scoped
-
+	Bartek
 </Notes>
 
----
-
-# Metrics are essential
-
-<Notes>
-
-</Notes>
 
 ---
 
-<Split>
+<CodeSurfer theme={shadesOfPurple}>
 
-<Image src={prometheus} size='auto'/>
-
-# Why Prometheus?
-
-</Split>
-
-<Notes>
-	Because Prometheus is awesome
-</Notes>
-
----
-
-# Instrumenting Go applications
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Common pitfalls???
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Globals
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# expose HTTP endpoint
-
----
-
-# Define Metrics
-
----
-
+```markdown
 # Register
+```
+
+</CodeSurfer>
+
+<Notes>
+	Bartek
+</Notes>
 
 ---
 
-<CodeSurfer theme={oceanicNext}>
+<CodeSurfer theme={shadesOfPurple}>
 
-```go title="Collectors are your frinends"
+```go title="Collectors are your friends"
     // Register standard Go metric collectors, which are by default registered when using global registry.
 	reg.MustRegister(
 		version.NewCollector("observable-demo"),
 	)
 ```
 
-```go title="Collectors are your frinends"
+```go title="Collectors are your friends"
     // Register standard Go metric collectors, which are by default registered when using global registry.
 	reg.MustRegister(
 		version.NewCollector("observable-demo"),
@@ -228,7 +122,7 @@ That's why we worked very hard... (sarcasm)
 	)
 ```
 
-```go title="Collectors are your frinends"
+```go title="Collectors are your friends"
     // Register standard Go metric collectors, which are by default registered when using global registry.
 	reg.MustRegister(
 		version.NewCollector("observable-demo"),
@@ -237,7 +131,7 @@ That's why we worked very hard... (sarcasm)
 	)
 ```
 
-```go title="Collectors are your frinends"
+```go title="Collectors are your friends"
     // Register standard Go metric collectors, which are by default registered when using global registry.
 	reg.MustRegister(
 		version.NewCollector("observable-demo"),
@@ -249,190 +143,169 @@ That's why we worked very hard... (sarcasm)
 
 </CodeSurfer>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+
+</Notes>
 
 ---
 
-<CodeSurfer theme={oceanicNext}>
+<CodeSurfer theme={shadesOfPurple}>
 
-```go title="Functions"
+```go title="Functions" 3:7
     // Register standard Go metric collectors, which are by default registered when using global registry.
 	reg.MustRegister(
-		version.NewCollector("observable-demo"),
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 			Name: "configured_failed_target_backoff_duration_seconds",
 			Help: "Configured backoff time for unavailable target.",
-		}, func() float64 { return blacklistBackoff.Seconds() }), // nolint: gocritic
+		}, func() float64 { return blacklistBackoff.Seconds() }),
 	)
 ```
 
 </CodeSurfer>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+
+</Notes>
 
 ---
 
-<CodeSurfer theme={oceanicNext}>
+<CodeSurfer theme={shadesOfPurple}>
 
-```go title="Register Handler"
+```go title="Expose metrics"
     mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 ```
 
-```diff 1 subtitle="expose metrics"
+</CodeSurfer>
 
+<Notes>
+
+</Notes>
+
+---
+
+<CodeSurfer theme={shadesOfPurple}>
+
+```markdown
+# Hard-coding project names in libraries
 ```
 
 </CodeSurfer>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+	Bartek
+</Notes>
 
 ---
 
-# Problems?? terrible for libs
+<CodeSurfer theme={shadesOfPurple}>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+```markdown
+# Naming
+```
 
----
+</CodeSurfer>
 
-# Solution: custom registered
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Counter vs Gauges
-
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+	Bartek
+</Notes>
 
 ---
 
-# Problems ??
+<CodeSurfer theme={shadesOfPurple}>
 
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Queue size vs added/removed?
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Gauge, reset etc loss of info
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Histogram vs Summaries
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Yolo histogram buckets
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Not SLO based
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Random string in labels
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# No Testing
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Hardcoding namespace in libraries/package
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# WrapRegisterer
-
-<CodeSurfer theme={oceanicNext}>
-
-```go
+```go title="WrapRegisterer"
 // WrapRegistererWithPrefix is like prometheus.WrapRegistererWithPrefix but it passes nil straight through
 // which allows nil check.
-func WrapRegistererWithPrefix(prefix string, reg prometheus.Registerer) prometheus.Registerer {
-	if reg == nil {
-		return nil
-	}
-
-	return prometheus.WrapRegistererWithPrefix(prefix, reg)
-}
+prometheus.WrapRegistererWithPrefix(prefix, reg)
 ```
+
 </CodeSurfer>
 
-<CodeSurfer theme={oceanicNext}>
+---
+
+<CodeSurfer theme={shadesOfPurple}>
 
 ```go
 // WrapRegistererWith is like prometheus.WrapRegistererWith but it passes nil straight through
 // which allows nil check.
-func WrapRegistererWith(labels prometheus.Labels, reg prometheus.Registerer) prometheus.Registerer {
-	if reg == nil {
-		return nil
-	}
-
-	return prometheus.WrapRegistererWith(labels, reg)
-}
+prometheus.WrapRegistererWith(labels, reg)
 ```
 </CodeSurfer>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+
+</Notes>
 
 ---
 
-# Not using middlewares
+<CodeSurfer theme={shadesOfPurple}>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+```markdown
+# Cardinality
+```
 
----
+</CodeSurfer>
 
-# Solution:
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# Reuse internally
-
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+	Kemal
+</Notes>
 
 ---
 
-# Convention/reuse dashboards; monitoring-mixins!
+<CodeSurfer theme={shadesOfPurple}>
 
-<Notes>Create speaker notes with the Notes component</Notes>
+```markdown
+# Not initializing Metrics
+```
 
----
+</CodeSurfer>
 
-# extra: Promtool and alert testing!
-
-<Notes>Create speaker notes with the Notes component</Notes>
-
----
-
-# ~~Q/A~~
-# Discussion
-
-<Notes>Create speaker notes with the Notes component</Notes>
+<Notes>
+	Kemal
+</Notes>
 
 ---
 
+<CodeSurfer theme={shadesOfPurple}>
+
+```markdown
+# Testing
+```
+
+</CodeSurfer>
+
+<Notes>
+	Kemal
+</Notes>
+
+---
+
+<CodeSurfer theme={shadesOfPurple}>
+
+```markdown
+# Histogram buckects
+```
+
+</CodeSurfer>
+
+<Notes>
+	Kemal
+</Notes>
+
+---
+<CodeSurfer theme={shadesOfPurple}>
+
+```markdown
+# Summary!
+```
+
+</CodeSurfer>
+
+<Notes>
+	Kemal
+</Notes>
+
+---
 
 <Split>
 
