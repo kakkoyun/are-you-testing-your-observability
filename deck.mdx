@@ -1,91 +1,66 @@
+import './styles.css'
+
 import { Head, Image, Appear, Notes, Invert, Split } from "mdx-deck"
 
 import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer"
-import { github, oceanicNext } from "@code-surfer/themes"
+import { oceanicNext } from "@code-surfer/themes"
 
 import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
 import redhat from './static/red_hat_logo.png'
 
-export const theme = github;
+export const theme = oceanicNext;
 
 <Head>
 	<title>Are you testing your Observability?</title>
 </Head>
 
-<Invert>
+<h1 style="text-align: center">Are you testing your Observability?</h1>
 
-# Are you testing your Observability?
-### GoDays 2020, Berlin
-#### 22.01.2020
-
-</Invert>
+<h7 style="position: absolute;text-align: left;bottom: 2%"> GoDays 2020, Berlin, 22.01.2020 </h7>
 
 <Notes>
+TODO: add names, twitter handles
 
-Introduction
+Hello everyone!
 
 </Notes>
+---
 
+TODO: our faces and 2 sentences.
+
+<Notes>
+Who are we
+</Notes>
 ---
 
 <Image src={prometheus} size='contain'/>
 
 <Notes>
-Who are we?
-Bartek Prometheus maintainer
-</Notes>
+TODO
 
+We work for Red Hat.
+We are building scalable Observability solutions and platforms for OpenShift.
+We work with Prometheus and Thanos on a daily basis.
+</Notes>
 ---
 
 <Image src={thanos} size='90%'/>
 
 <Notes>
+TODO: notes
 Bartek Thanos creator and maintainer
 Kemal Thanos contributor
 </Notes>
-
 ---
 
-<Image src={redhat} size='auto'/>
+## Let's implement L7 loadbalancer in Go! ❤️
 
 <Notes>
 
-We work for Red Hat.
-We are building scalable Observability solutions and platforms for OpenShift.
-We work with Prometheus and Thanos on a daily basis.
+TODO:...
 
 </Notes>
-
----
-
-<Invert>
-
-<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/ss_01.png" style="height: 90%"/>
-
-</Invert>
-
-<Notes>
-
-This is Kemal's first talk.
-That's why we worked very hard... (sarcasm)
-
-</Notes>
-
----
-
-# Agenda
-
-#### (TODO: REMOVE!)
-
----
-
-## What is observability; Why Prometheus [5m-7m]
-* Signals
-* Metrics are essential.
-
-#### (TODO: REMOVE!)
-
 ---
 
 ## Instrumenting Go applications; Common pitfalls
