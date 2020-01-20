@@ -3,7 +3,7 @@ import './styles.css'
 import { Head, Image, Appear, Notes, Invert, Split } from "mdx-deck"
 
 import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer"
-import { oceanicNext, shadesOfPurple } from "@code-surfer/themes"
+import { shadesOfPurple } from "@code-surfer/themes"
 
 import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
@@ -15,7 +15,7 @@ export const theme = shadesOfPurple;
 	<title>Are you testing your Observability?</title>
 </Head>
 
-<CodeSurfer theme={shadesOfPurple}>
+<CodeSurfer>
 
 ```go 6[17:53],7[17:53],11[17:53]
 package main
@@ -310,7 +310,7 @@ Well...
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+<CodeSurfer>
 
 ```go title="Server HTTP request counter: Simple example"
 
@@ -393,7 +393,7 @@ func init() {
 
 ---
 
-<CodeSurferColumns theme={shadesOfPurple}>
+<CodeSurferColumns>
 
 <Step title="Server HTTP request counter: Simple example">
 
@@ -455,7 +455,7 @@ So what we accomplished?
 
 import graph_requests from './static/graph-requests.png'
 
-<CodeSurfer theme={shadesOfPurple}>
+<CodeSurfer>
 
 ```go 4,6 title="From code to graph" subtitle="code"
 var (
@@ -573,7 +573,7 @@ Middlewares/Tripperwares
 
 ---
 
-## Pitfalls #5: Not initializing Metrics
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #5: Not initializing Metrics</h2>
 
 <Notes>
 	TOOD: Kemal
@@ -582,9 +582,13 @@ Counter Metrics are fine, CounterVec!!
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+<CodeSurfer>
 
 ```go title="Not initializing Metrics"
+
+type Metrics struct {
+	failures  *prometheus.CounterVec
+}
 
 m := &Metrics{
 	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -605,7 +609,7 @@ return m
 ```
 
 ```go title="Not initializing Metrics"
-m.failures.WithLabelValues("no_target_resolved").Add(30))
+m.failures.WithLabelValues("no_target_resolved").Add(30)
 ```
 
 </CodeSurfer>
@@ -636,9 +640,13 @@ import uninitialized_metrics_marked from './static/uninitialized_metrics_marked.
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+<CodeSurfer>
 
 ```go title="Not initializing Metrics"
+
+type Metrics struct {
+	failures  *prometheus.CounterVec
+}
 
 m := &Metrics{
 	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -660,6 +668,17 @@ return m
 
 ```go title="Not initializing Metrics"
 
+const (
+	failedNoTargetAvailable = "no_target_available"
+	failedNoTargetResolved  = "no_target_resolved"
+	failedTimeout           = "timeout"
+	failedUnknown           = "unknown"
+)
+
+type Metrics struct {
+	failures  *prometheus.CounterVec
+}
+
 m := &Metrics{
 	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
 		Subsystem: "lbtransport",
@@ -674,10 +693,44 @@ if reg != nil {
 	)
 }
 
-m.failures.WithLabelValues("unknown")
-m.failures.WithLabelValues("no_target_available")
-m.failures.WithLabelValues("timeout")
-m.failures.WithLabelValues("no_target_resolved")
+return m
+
+```
+
+```go title="Not initializing Metrics"
+
+const (
+	failedNoTargetAvailable = "no_target_available"
+	failedNoTargetResolved  = "no_target_resolved"
+	failedTimeout           = "timeout"
+	failedUnknown           = "unknown"
+)
+
+type Metrics struct {
+	failures  *prometheus.CounterVec
+}
+
+m := &Metrics{
+	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
+		Subsystem: "lbtransport",
+		Name:      "proxied_failed_requests_total",
+		Help:      "Total number failed proxy round trips.",
+	}, []string{"reason"}),
+}
+
+if reg != nil {
+	reg.MustRegister(
+		m.failures,
+	)
+}
+
+// Initialize failure metric.
+// It is possible to call this method without using the returned Counter to only
+// create the new Counter but leave it at its starting value 0.
+m.failures.WithLabelValues(failedUnknown)
+m.failures.WithLabelValues(failedNoTargetAvailable)
+m.failures.WithLabelValues(failedTimeout)
+m.failures.WithLabelValues(failedNoTargetResolved)
 
 return m
 
@@ -711,49 +764,383 @@ import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+BTW: Counters are initialized by default.
 
-```markdown
-# Cardinality
+TODO
+
+<Notes>
+	TODO: Kemal
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #6: Unbounded Cardinality</h2>
+
+<Notes>
+	TODO: Kemal
+
+	Add path or similar to labels
+	Show bad example of passing raw error as label name of lbtransport metric for fails (!): https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38
+	Why it matters, instead do as here: prepare predefine reasons: https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38.
+</Notes>
+
+---
+
+<CodeSurfer>
+
+```go title="Unbounded Cardinality"
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+```
+
+```go
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(err).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{
+		Conn:            conn,
+		connClosedTotal: metrics.connClosedTotal,
+	}, nil
+}
+
+```
+
+</CodeSurfer>
+
+---
+
+TODO: Screenshot
+
+<Notes>
+
+TODO: !!
+
+</Notes>
+
+---
+<CodeSurfer>
+
+```go
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(err).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{
+		Conn:            conn,
+		connClosedTotal: metrics.connClosedTotal,
+	}, nil
+}
+
+```
+
+```go
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(err).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{
+		Conn:            conn,
+		connClosedTotal: metrics.connClosedTotal,
+	}, nil
+}
+
+```
+
+
+```go
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{
+		Conn:            conn,
+		connClosedTotal: metrics.connClosedTotal,
+	}, nil
+}
+
+```
+
+```go
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{
+		Conn:            conn,
+		connClosedTotal: metrics.connClosedTotal,
+	}, nil
+}
+
+func dialErrToReason(err error) string {
+	if netErr, ok := err.(*net.OpError); ok {
+		switch nestErr := netErr.Err.(type) {
+		case *net.DNSError:
+			return failedResolution
+		case *os.SyscallError:
+			if nestErr.Err == syscall.ECONNREFUSED {
+				return failedConnRefused
+			}
+
+			return failedUnknown
+		}
+
+		if netErr.Timeout() {
+			return failedTimeout
+		}
+	} else if err == context.Canceled || err == context.DeadlineExceeded {
+		return failedTimeout
+	}
+
+	return failedUnknown
+}
+
+```
+
+
+</CodeSurfer>
+
+<Notes>
+	TODO: Kemal
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #7: Poorly chosen Histogram buckects</h2>
+
+---
+
+<CodeSurfer>
+
+```go title="Poorly chosen Histogram buckects"
 ```
 
 </CodeSurfer>
 
 <Notes>
-	Kemal
+	TODO: Kemal
+	Show metrics with yolo many buckets
+	Problem: Cardinality (explain why)
+	Solution: SLO based!
+
+	Use real life example, too large request or too small requests
+	Too many buckets
+	Too less buckets
 </Notes>
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #8: Histogram vs Summary</h2>
 
-```markdown
-# Histogram buckects
+TODO: Fix title
+
+---
+
+<CodeSurfer>
+
+```go title="Histogram vs Summary"
 ```
 
 </CodeSurfer>
 
 <Notes>
-	Kemal
+	TODO: Kemal
+	Using summary where histogram would be cheaper, explain differences
 </Notes>
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #9: Not Testing</h2>
 
-```markdown
-# Testing
+TODO: Fix title
+
+---
+<CodeSurfer>
+
+```go title="Not Testing"
+
 ```
 
 </CodeSurfer>
 
 <Notes>
-	Kemal
+	TODO: Kemal
+	No tests
+	Solution: testutil! lbtransport metrics, reliability! Shows how you can use metrics, what behaviour to expect!
 </Notes>
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Sum things Up? Summary?</h2>
+
+---
+<CodeSurfer>
 
 ```markdown
 # Summary!
@@ -762,12 +1149,12 @@ import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 </CodeSurfer>
 
 <Notes>
-	Kemal
+	TODO: Kemal
 </Notes>
 
 ---
 
-<CodeSurfer theme={shadesOfPurple}>
+<CodeSurfer>
 
 ```markdown
 # Extras!
