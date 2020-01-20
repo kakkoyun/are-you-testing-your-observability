@@ -651,11 +651,11 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ---
 
-TODO: Screenshot
+TODO: Kemal - Screenshot
 
 <Notes>
 
-TODO: !!
+TODO: Kemal !!
 
 </Notes>
 
@@ -1039,7 +1039,7 @@ import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 
 BTW: Counters are initialized by default.
 
-TODO
+TODO: Kemal
 
 <Notes>
 	TODO: Kemal
@@ -1053,7 +1053,8 @@ TODO
 
 <CodeSurfer>
 
-```go title="Poorly chosen Histogram buckets"
+```markdown title="Poorly chosen Histogram buckets"
+# Implement me: Kemal
 ```
 
 </CodeSurfer>
@@ -1079,7 +1080,8 @@ TODO: Fix title
 
 <CodeSurfer>
 
-```go title="Histogram vs Summary"
+```markdown title="Histogram vs Summary"
+# Implement me: Kemal
 ```
 
 </CodeSurfer>
@@ -1093,12 +1095,534 @@ TODO: Fix title
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #9: Not Testing</h2>
 
-TODO: Fix title
+TODO: Kemal - Fix title
 
 ---
+
+<CodeSurfer>
+
+```go title="Not testing"
+
+type Metrics struct {
+	successes prometheus.Counter
+	failures  *prometheus.CounterVec
+	duration  prometheus.Histogram
+}
+
+func NewMetrics(reg prometheus.Registerer) *Metrics {
+	m := &Metrics{
+		successes: prometheus.NewCounter(prometheus.CounterOpts{
+			Subsystem: "lbtransport",
+			Name:      "proxied_requests_total",
+			Help:      "Total number successful proxy round trips.",
+		}),
+		failures: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Subsystem: "lbtransport",
+			Name:      "proxied_failed_requests_total",
+			Help:      "Total number failed proxy round trips.",
+		}, []string{"reason"}),
+		duration: prometheus.NewHistogram(
+			prometheus.HistogramOpts{
+				Subsystem: "lbtransport",
+				Name:      "proxy_duration_seconds",
+				Help:      "Duration of proxy logic.",
+				Buckets:   []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 10},
+			}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.successes, m.failures, m.duration)
+	}
+
+	return m
+}
+
+```
+
+```go title="prometheus/testutil here to help"
+
+import (
+	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/prometheus/prometheus/util/testutil"
+)
+
+```
+</CodeSurfer>
+
+---
+
 <CodeSurfer>
 
 ```go title="Not Testing"
+
+struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	// ...
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		// ...
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	// ...
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing" 15:21,25:33,34[5:7]
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	{
+		targets:      []string{"a"},
+		responses:    []response{okResponse("a")},
+		expectedHost: "a",
+
+		successes: 1,
+	},
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	{
+		targets:      []string{"a"},
+		responses:    []response{okResponse("a")},
+		expectedHost: "a",
+
+		successes: 1,
+	},
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+		testutil.Equals(t, tcase.excluded, picker.excluded)
+		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	{
+		targets:      []string{"a"},
+		responses:    []response{okResponse("a")},
+		expectedHost: "a",
+
+		successes: 1,
+	},
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+		testutil.Equals(t, tcase.excluded, picker.excluded)
+		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
+
+		testutil.Equals(t, tcase.successes, promtestutil.ToFloat64(metrics.successes))
+		testutil.Equals(t, tcase.failedNoTargetAvailable, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetAvailable)))
+		testutil.Equals(t, tcase.failedNoTargetResolved, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetResolved)))
+		testutil.Equals(t, tcase.failedUnknown, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedUnknown)))
+		testutil.Equals(t, float64(0), promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedTimeout)))
+		testutil.Equals(t, 4, promtestutil.CollectAndCount(lb.metrics.failures))
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	{
+		targets:      []string{"a"},
+		responses:    []response{okResponse("a")},
+		expectedHost: "a",
+
+		successes: 1,
+	},
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+		testutil.Equals(t, tcase.excluded, picker.excluded)
+		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
+
+		testutil.Equals(t, tcase.successes, promtestutil.ToFloat64(metrics.successes))
+		testutil.Equals(t, tcase.failedNoTargetAvailable, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetAvailable)))
+		testutil.Equals(t, tcase.failedNoTargetResolved, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetResolved)))
+		testutil.Equals(t, tcase.failedUnknown, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedUnknown)))
+		testutil.Equals(t, float64(0), promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedTimeout)))
+		testutil.Equals(t, 4, promtestutil.CollectAndCount(lb.metrics.failures))
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	{
+		targets:      []string{"a"},
+		responses:    []response{okResponse("a")},
+		expectedHost: "a",
+
+		successes: 1,
+	},
+	{
+		targets: []string{"a"},
+		responses: []response{
+			{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+		},
+		excluded:    []string{"a"},
+		expectedErr: errors.New("lb: no target is available"),
+
+		successes: 2, failedNoTargetAvailable: 1,
+	},
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+		testutil.Equals(t, tcase.excluded, picker.excluded)
+		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
+
+		testutil.Equals(t, tcase.successes, promtestutil.ToFloat64(metrics.successes))
+		testutil.Equals(t, tcase.failedNoTargetAvailable, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetAvailable)))
+		testutil.Equals(t, tcase.failedNoTargetResolved, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetResolved)))
+		testutil.Equals(t, tcase.failedUnknown, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedUnknown)))
+		testutil.Equals(t, float64(0), promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedTimeout)))
+		testutil.Equals(t, 4, promtestutil.CollectAndCount(lb.metrics.failures))
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	{
+		targets:      []string{"a"},
+		responses:    []response{okResponse("a")},
+		expectedHost: "a",
+
+		successes: 1,
+	},
+	{
+		targets: []string{"a"},
+		responses: []response{
+			{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+		},
+		excluded:    []string{"a"},
+		expectedErr: errors.New("lb: no target is available"),
+
+		successes: 2, failedNoTargetAvailable: 1,
+	},
+	{
+		targets:     []string{},
+		expectedErr: errors.New("lb: no target was resolved"),
+
+		successes: 2, failedNoTargetAvailable: 1, failedNoTargetResolved: 1,
+	},
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+		testutil.Equals(t, tcase.excluded, picker.excluded)
+		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
+
+		testutil.Equals(t, tcase.successes, promtestutil.ToFloat64(metrics.successes))
+		testutil.Equals(t, tcase.failedNoTargetAvailable, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetAvailable)))
+		testutil.Equals(t, tcase.failedNoTargetResolved, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetResolved)))
+		testutil.Equals(t, tcase.failedUnknown, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedUnknown)))
+		testutil.Equals(t, float64(0), promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedTimeout)))
+		testutil.Equals(t, 4, promtestutil.CollectAndCount(lb.metrics.failures))
+	}); !ok {
+		return
+	}
+}
+
+```
+
+```go title="Not Testing"
+
+for _, tcase := range []struct {
+	targets   []string
+	responses []response
+	excluded  []string
+
+	expectedHost string
+	expectedErr  error
+
+	failedNoTargetAvailable float64
+	failedNoTargetResolved  float64
+	failedUnknown           float64
+	successes               float64
+}{
+	{
+		targets:      []string{"a"},
+		responses:    []response{okResponse("a")},
+		expectedHost: "a",
+
+		successes: 1,
+	},
+	{
+		targets: []string{"a"},
+		responses: []response{
+			{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+		},
+		excluded:    []string{"a"},
+		expectedErr: errors.New("lb: no target is available"),
+
+		successes: 2, failedNoTargetAvailable: 1,
+	},
+	{
+		targets:     []string{},
+		expectedErr: errors.New("lb: no target was resolved"),
+
+		successes: 2, failedNoTargetAvailable: 1, failedNoTargetResolved: 1,
+	},
+	{
+		targets: []string{"a", "b", "c", "d", "e", "f", "g"},
+		responses: []response{
+			{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+			{host: "b", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+			{host: "c", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+			{host: "d", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+			{host: "e", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+			{host: "f", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
+			okResponse("g"),
+		},
+		excluded:     []string{"a", "b", "c", "d", "e", "f"},
+		expectedHost: "g",
+
+		successes: 3, failedNoTargetAvailable: 1, failedNoTargetResolved: 1,
+	},
+} {
+	if ok := t.Run("", func(t *testing.T) {
+		reset(tcase)
+
+		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
+		if tcase.expectedErr != nil {
+			testutil.NotOk(t, err)
+			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
+		} else {
+			testutil.Ok(t, err)
+			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
+		}
+		testutil.Equals(t, tcase.excluded, picker.excluded)
+		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
+
+		testutil.Equals(t, tcase.successes, promtestutil.ToFloat64(metrics.successes))
+		testutil.Equals(t, tcase.failedNoTargetAvailable, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetAvailable)))
+		testutil.Equals(t, tcase.failedNoTargetResolved, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetResolved)))
+		testutil.Equals(t, tcase.failedUnknown, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedUnknown)))
+		testutil.Equals(t, float64(0), promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedTimeout)))
+		testutil.Equals(t, 4, promtestutil.CollectAndCount(lb.metrics.failures))
+	}); !ok {
+		return
+	}
+}
 
 ```
 
@@ -1108,6 +1632,11 @@ TODO: Fix title
 	TODO: Kemal
 	No tests
 	Solution: testutil! lbtransport metrics, reliability! Shows how you can use metrics, what behaviour to expect!
+
+	You have some metrics to test!
+	But it's hard to write tests!
+
+	prometheus/testutil here to help
 </Notes>
 
 ---
@@ -1115,30 +1644,28 @@ TODO: Fix title
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Sum things Up? Summary?</h2>
 
 ---
-<CodeSurfer>
 
-```markdown
-# Summary!
-```
+# Summary
 
-</CodeSurfer>
+<ul>
+	<Appear>
+		<li>Pitfall #1</li>
+		<li>Pitfall #2</li>
+		<li>Pitfall #3</li>
+		<li>Pitfall #4</li>
+		<li>Pitfall #5</li>
+		<li>Pitfall #6</li>
+		<li>Pitfall #7</li>
+		<li>Pitfall #8</li>
+		<li>Pitfall #9</li>
+		<li>Pitfall #10</li>
+	</Appear>
+</ul>
+
+## TODO: Kemal
 
 <Notes>
 	TODO: Kemal
-</Notes>
-
----
-
-<CodeSurfer>
-
-```markdown
-# Extras!
-```
-
-</CodeSurfer>
-
-<Notes>
-	Kemal
 </Notes>
 
 ---
@@ -1152,4 +1679,5 @@ Reference:
 * [Slides](https://github.com/kakkoyun/are-you-testing-your-observability)
 * [Thanos](https://thanos.io)
 * [Prometheus](https://prometheus.io)
+* [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus/testutil)
 * [Gopherize me](https://gopherize.me/)
