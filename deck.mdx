@@ -565,7 +565,7 @@ Middlewares/Tripperwares
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #3: Harcoding project name</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #4: Harcoding project name</h2>
 
 <Notes>
 
@@ -573,11 +573,284 @@ Middlewares/Tripperwares
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #5: Not initializing Metrics</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #5: Unbounded Cardinality</h2>
+
+<Notes>
+	TODO: Kemal
+
+	Add path or similar to labels
+	Show bad example of passing raw error as label name of lbtransport metric for fails (!): https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38
+	Why it matters, instead do as here: prepare predefine reasons: https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38.
+</Notes>
+
+---
+
+<CodeSurfer>
+
+```go title="Unbounded Cardinality" 7:14
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+```
+
+```go 24:28
+
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
+}
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(...) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(err).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{...}, nil
+}
+
+```
+
+</CodeSurfer>
+
+---
+
+TODO: Screenshot
+
+<Notes>
+
+TODO: !!
+
+</Notes>
+
+---
+<CodeSurfer>
+
+```go 5:11,22:25
+
+// ...
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(...) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(err).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{...}, nil
+}
+
+```
+
+```go
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+// ...
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(...) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(err).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{...}, nil
+}
+
+```
+
+
+```go
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+// ...
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(...) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{...}, nil
+}
+
+```
+
+```go
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+// ...
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(...) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{...}, nil
+}
+
+func dialErrToReason(err error) string {
+	if netErr, ok := err.(*net.OpError); ok {
+
+		switch nestErr := netErr.Err.(type) {
+		case *net.DNSError:
+			return failedResolution
+
+		case *os.SyscallError:
+			if nestErr.Err == syscall.ECONNREFUSED {
+				return failedConnRefused
+			}
+			return failedUnknown
+		}
+
+		if netErr.Timeout() {
+			return failedTimeout
+		}
+	}
+
+	return failedUnknown
+}
+
+```
+
+</CodeSurfer>
+
+<Notes>
+	TODO: Kemal
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #6: Not initializing Metrics</h2>
 
 <Notes>
 	TOOD: Kemal
-Counter Metrics are fine, CounterVec!!
+	Counter Metrics are fine, CounterVec!!
 </Notes>
 
 ---
@@ -724,7 +997,7 @@ if reg != nil {
 	)
 }
 
-// Initialize failure metric.
+// Initialize CounterVec.
 // It is possible to call this method without using the returned Counter to only
 // create the new Counter but leave it at its starting value 0.
 m.failures.WithLabelValues(failedUnknown)
@@ -767,304 +1040,6 @@ import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 BTW: Counters are initialized by default.
 
 TODO
-
-<Notes>
-	TODO: Kemal
-</Notes>
-
----
-
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #6: Unbounded Cardinality</h2>
-
-<Notes>
-	TODO: Kemal
-
-	Add path or similar to labels
-	Show bad example of passing raw error as label name of lbtransport metric for fails (!): https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38
-	Why it matters, instead do as here: prepare predefine reasons: https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38.
-</Notes>
-
----
-
-<CodeSurfer>
-
-```go title="Unbounded Cardinality"
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-```
-
-```go
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(err).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{
-		Conn:            conn,
-		connClosedTotal: metrics.connClosedTotal,
-	}, nil
-}
-
-```
-
-</CodeSurfer>
-
----
-
-TODO: Screenshot
-
-<Notes>
-
-TODO: !!
-
-</Notes>
-
----
-<CodeSurfer>
-
-```go
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(err).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{
-		Conn:            conn,
-		connClosedTotal: metrics.connClosedTotal,
-	}, nil
-}
-
-```
-
-```go
-
-const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
-	failedUnknown     = "unknown"
-)
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(err).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{
-		Conn:            conn,
-		connClosedTotal: metrics.connClosedTotal,
-	}, nil
-}
-
-```
-
-
-```go
-
-const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
-	failedUnknown     = "unknown"
-)
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{
-		Conn:            conn,
-		connClosedTotal: metrics.connClosedTotal,
-	}, nil
-}
-
-```
-
-```go
-
-const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
-	failedUnknown     = "unknown"
-)
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-func dialClientConnTracker(ctx context.Context, ntk string, addr string, metrics *DialerMetrics, parentDialContextFunc dialerContextFunc) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{
-		Conn:            conn,
-		connClosedTotal: metrics.connClosedTotal,
-	}, nil
-}
-
-func dialErrToReason(err error) string {
-	if netErr, ok := err.(*net.OpError); ok {
-		switch nestErr := netErr.Err.(type) {
-		case *net.DNSError:
-			return failedResolution
-		case *os.SyscallError:
-			if nestErr.Err == syscall.ECONNREFUSED {
-				return failedConnRefused
-			}
-
-			return failedUnknown
-		}
-
-		if netErr.Timeout() {
-			return failedTimeout
-		}
-	} else if err == context.Canceled || err == context.DeadlineExceeded {
-		return failedTimeout
-	}
-
-	return failedUnknown
-}
-
-```
-
-
-</CodeSurfer>
 
 <Notes>
 	TODO: Kemal
