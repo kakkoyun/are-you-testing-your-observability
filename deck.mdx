@@ -192,6 +192,15 @@ Middlewares/Tripperwares
 
 ---
 
+## Pitfalls #5: Not initializing Metrics
+
+<Notes>
+	TOOD: Kemal
+Counter Metrics are fine, CounterVec!!
+</Notes>
+
+---
+
 <CodeSurfer theme={shadesOfPurple}>
 
 ```go title="Not initializing Metrics"
@@ -212,6 +221,10 @@ if reg != nil {
 
 return m
 
+```
+
+```go title="Not initializing Metrics"
+m.failures.WithLabelValues("no_target_resolved").Add(30))
 ```
 
 </CodeSurfer>
