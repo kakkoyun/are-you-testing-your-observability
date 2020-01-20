@@ -108,38 +108,426 @@ With me there is Kemal: Kemal TODO intro
 
 We are both working in the same monitoring team for Red Hat.
 We are building scalable Observability solutions and platforms for OpenShift.
-But also as one of the major part of our work is maintaing Prometheus and Thanos projects on a daily basis.
+But also as one of the major part of our work is maintaining Prometheus and Thanos projects on a daily basis.
 
 </Notes>
 
 ---
 
-Let's implement L7 loadbalancer in Go! ❤️
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's implement an HTTP L7 loadbalancer in Go! ❤ </h2>
+
+️*Because why not?*
 
 <Appear>
-   <p>image L7 todo</p>
+   <img src="https://docs.google.com/drawings/d/e/2PACX-1vQKHs_qMJWPKulEUxoDcLXww4Kq32IcJfPLbnnBfUDMj3AxQzuhRJtCKbw-i6TgqhBoRCfWo7RnV1nm/pub?w=960&h=720"/>
 </Appear>
 
 <Notes>
 
-Bartek todo
+So let's do something fun! Let's implement application level HTTP loadbalancer in Go? Why?
+Well these days with replicated microservices loadbalancer are crucial. HTTP is the most popular
+protocol this days for API communication, and application level loadbalancing gives us more control
+in terms of things like request based load balancing instead of connection based, graceful shutdowns,
+inspection and distribution of load.
+
+Appear:
+
+So let's say we implemented transparent loadbalancer as presented in this diagram. From high level design we have:
+
+* single HTTP server that implements ServerHTTP method, so handler via awesome ReverseProxy in standard httputil package.
+* ReverseProxy allows us to implement custom Transport, so RoundTripper interface which is to send
+some request to remote backend.
+* our load balancing RoundTipper implementation called lbtranport is internally using then few components:
+
+  * Discoverer which gives us targets to proxy / loadbalance request to
+  * RoundRobinPicker which chooses right target to proxy user request to in round robin manner, so: replica 1, 2,3, then again 1, 2, 3
+  * And at the end it uses HTTP transport so, http.RoundTripper that belongs to picked target and proxy request through and proxy response back to the user.
 
 </Notes>
 
 ---
 
-Are we not missing something?
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
 
-<ul>
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vQKHs_qMJWPKulEUxoDcLXww4Kq32IcJfPLbnnBfUDMj3AxQzuhRJtCKbw-i6TgqhBoRCfWo7RnV1nm/pub?w=960&h=720"/>
+
+<Notes>
+
+This is great, it looks like this implementation should work.. but are we sure it's production ready?
+
+So let's say we deploy couple of replicas of our loadbalancer on production in front of some microservice and let
+it run for longer time.
+
+As soon as it starts running, we hit /lb endpoint manually and we can it works. So we are good, right?
+
+Well...
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vT4N2dSOi0FhqFx1yVeNYPlJk6kT8o-7FdgvXvwpXiWVkK9MKM4SLflq4o3rJni9hEjWjrs7HKg0iOr/pub?w=960&h=720"/>
+
+<Notes>
+
+     Does it actually work for 100% users or only me?
+     I have better things to do then manually hitting /lb endpoint to check if it works constantly, right?
+     Are all request fast enough?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vTOKGrz6rfXVoHSfdNY4Pe901pdaJizjylwqyhkwMU53bRy9VXAJE4hTfGJrGiDncfg3Coh7Par67lu/pub?w=960&h=720"/>
+
+<Notes>
+
+    Is discovery really working? How many replicas it discovers, e.g through DNS?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vR-mA1zdYoQ-6pPjcSZFGTNIH1RV_3_VymMYOW1Y_OblYxiNoW-R-PBIVGHjNTHeyqiA-H9GIcZnQ6p/pub?w=960&h=720"/>
+
+<Notes>
+
+    Is round robin picker, picking in round robin matter?
+    Is 1/3 of all requests actually going to replica 1? What's the distribution?
+    Why one backend is overloaded with request?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vTxiQx99iCG7WgA2sfceWofNnol0ynukyDZ3iCoOY02CDcyvkHIJC4J4SQvSYMYAbiDjbhs_3WWsGCr/pub?w=960&h=720"/>
+
+<Notes>
+
+   Users reports that endpoint is slow, is it backend or latency of target of latency of loadbalancing?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vRz638FUDhV2SGsC5bco5wVnE0VHb_OLU6g4SaOL108D1KZLXkzmTgSHz6d-d-OPYkij2BzA27FVio2/pub?w=960&h=720"/>
+
+<Notes>
+
+  One of the nodes that loadbalancer running on OOM-ed, how much resources loadbalancer even use? Do we have a leak?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vTTmGW2ky_qxu9TEYUsnvQwHBe0lhTSc07UHHSCRsjHldVwm2fR2GpIEHZkZD5HbW3hObU4TXJnN7N4/pub?w=960&h=720"/>
+
+<Notes>
+
+  What version of binary we were running 2 days ago at 2pm? Something was wrong back then.
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> We need: Observability!</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vSvJ_htd2Q-qEzCkxjl057HEiGpnP97JLSdHVtjqlH4_huRIp8kgmhD0vRbufTCF4UWjkuje-l2Lli8/pub?w=960&h=720"/>
+
+<Notes>
+
+  As you can see there are plenty of questions that would be not answered when running service like this on
+  production, without proper monitoring. That's why in SRE book you will find monitorin as the foundation
+  of any system, BEFORE even the system itself!
+
+  As you are familiar the some monitoring signals we can introduce are: traces, logs and metrics.
+  Guess what Which of those will give us answer to our questions like distribution of requests or histogram of tail latency?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our loadbalancer with Prometheus metrics!</h2>
+<br/>
+<br/>
+
 <Appear>
-    <li>Can I be notified when no backend is available for users?</li>
-    <li>What is the distribution of request through backends now?</li>
-    <li>Why one backend is overloaded?</li>
-    <li>Something is slow, is it backend or latency of loadbalancing?</li>
-    <li>My node OOM-ed, how much resources loadbalancer even use?</li>
-    <li>What version of binary we were running 2 days ago at 2pm?</li>
+<span>Cheap</span>
+<span>Near Real Time</span>
+<span>Aggregate-able & Actionable = Alerts</span>
+<div>
+    <img src={prometheus} style="height: 50%; margin: auto; display: block; margin-top: 100px;" />
+    <p>http://prometheus.io</p>
+
+</div>
 </Appear>
-</ul>
+
+<Notes>
+
+	Metrics, yup!
+
+	Metrics will give us the answer to our question. Answer that is in comparison to logs and traces:
+
+	* CHEAP to calculate
+	* Near Real Time
+    * Clear and Actionable, so you can alert on those.
+
+    In practice metrics should be the first item on monitoring list that you should do if you care to run
+    your service reliably.
+
+    Appear:
+
+    Why Prometheus though? Well I might be bias but Prometheus is currently one of the simplest and
+    cheapest option for collecting, storing and querying metrics as well as reliable alerting.
+    It fits for small solution as well as for bigger ones with help of projects like Thanos, Cortex, m3db and others
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our loadbalancer with Prometheus metrics!</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vREgXi-KbyUIdbSbaFsIQbkWE7ZrcPA0cBya53PB-jfIRL1E6uMvJC4HUc4Ca9Rujizv_-zQhEr3P_O/pub?w=960&h=720"/>
+
+<Notes>
+
+    So.. how to add Prometheus metrics to our loadbalancer? Let's say we want to add counter of requests made
+    to our loadbalancer server instance. We can add this counter in few simple steps.
+
+</Notes>
+
+---
+
+<CodeSurfer theme={shadesOfPurple}>
+
+```go title="Server HTTP request counter: Simple example"
+
+import "github.com/prometheus/client_golang/prometheus"
+
+```
+
+```go 5,6,7,8,9,10 title="Server HTTP request counter: Simple example"
+
+import "github.com/prometheus/client_golang/prometheus"
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+```
+
+```go 13,14,18,19 title="Server HTTP request counter: Simple example"
+
+import "github.com/prometheus/client_golang/prometheus"
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+// Top level ServerHTTP handler.
+func ServerHTTP(w http.ResponseWriter, r *http.Request) {
+  statusRec := newStatusRecorder(w)
+  next.ServeHTTP(statusRec, r)
+
+  // Increment our counter with written status code and request method.
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Inc()
+}
+
+```
+
+```go 23 title="Server HTTP request counter: Simple example"
+
+import "github.com/prometheus/client_golang/prometheus"
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+// Top level ServerHTTP handler.
+func ServerHTTP(w http.ResponseWriter, r *http.Request) {
+  statusRec := newStatusRecorder(w)
+  next.ServeHTTP(statusRec, r)
+
+  // Increment our counter with written status code and request method.
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Inc()
+}
+
+func init() {
+	prometheus.MustRegister(serverRequestsTotal)
+}
+
+```
+
+</CodeSurfer>
+
+<Notes>
+
+</Notes>
+
+---
+
+<CodeSurferColumns theme={shadesOfPurple}>
+
+<Step title="Server HTTP request counter: Simple example">
+
+```go 3
+
+func init() {
+	prometheus.MustRegister(serverRequestsTotal)
+}
+
+```
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vREgXi-KbyUIdbSbaFsIQbkWE7ZrcPA0cBya53PB-jfIRL1E6uMvJC4HUc4Ca9Rujizv_-zQhEr3P_O/pub?w=960&h=720"/>
+
+</Step>
+<Step title="Server HTTP request counter: Simple example">
+
+```go 7,12
+
+func init() {
+	prometheus.MustRegister(serverRequestsTotal)
+}
+
+mux := http.NewServeMux()
+mux.Handle("/metrics", promhttp.Handler())
+mux.Handle("/lb", ...)
+
+// Other handlers...
+
+srv := &http.Server{Handler: mux}
+
+// Run server...
+
+```
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vRcDyIrN_3tzI_QbA99QkvMHAHDIZZi-sh1stXoul_M-zyM1GQPdOCvC_h8nU91l-uQ-UUKjhuGhlYj/pub?w=960&h=720"/>
+
+</Step>
+</CodeSurferColumns>
+
+<Notes>
+
+So what we accomplished?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0px 10px 0 10px;">Prometheus can now collect metrics from our Loadbalancer</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vQazezdwEI7-_Naf_aMSGipdrSNMoDgc9YtrFyO_ttl1kuyeI7jn8lFtfVk8jQ35BQEAg2m8CvYGp3r/pub?w=590&h=701"/>
+
+<Notes>
+
+So what we accomplished?
+
+</Notes>
+
+---
+
+import graph_requests from './static/graph-requests.png'
+
+<CodeSurfer theme={shadesOfPurple}>
+
+```go 4,6 title="From code to graph" subtitle="code"
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+```
+
+```go 4,6,12,13 title="From code to graph" subtitle="/metric"
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+# HELP http_requests_total Tracks the number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{code="200",handler="/lb",method="get"} 1089
+http_requests_total{code="500",handler="/lb",method="get"} 46
+
+```
+
+</CodeSurfer>
+
+<Notes>
+
+So what we accomplished?
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0px 10px 0 10px;">Graph: Prometheus UI</h2>
+
+<img src={graph_requests} style="height: 70%; margin-top: 5%"/>
+
+<Notes>
+
+So what we accomplished?
+
+</Notes>
+
+---
+
+import pitfalls from './static/pitfalls.png'
+
+<h1 style="text-align: center; margin: 0px 10px 0 10px;">Pitfalls</h1>
+
+<img src={pitfalls} style="height: 50%; margin-top: 5%"/>
+
+<Notes>
+    Especially when we talk about libraries.. but.. most of our code is technically libraries. If you want to be
+    friendly open source project any of your packages (unless to hide those under `internal`) can be reused
+    by other projects. In fact probably you want those to be reused to join forces, have more hands to help on
+    particular functionality that your package gives.
+
+	 Now, even if you don't care about reusing in other project, your project is using your own package as library as well,
+	 so it's crucial to allow certain flexibility, and some of the pitfalls we will be looking at are limiting use of
+	 your Go package.
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #1: Globals</h2>
 
 <Notes>
 	Bartek
@@ -147,25 +535,7 @@ Are we not missing something?
 
 ---
 
-Let's instrument our loadbalancer with Prometheus metrics!
-
-todo diagram
-
-<Notes>
-	Bartek
-</Notes>
-
----
-
-## Pitfalls #1: Globals
-
-<Notes>
-	Bartek
-</Notes>
-
----
-
-## Pitfalls #2: Can we reuse more?
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #2: No Reuse</h2>
 
 <Notes>
 
@@ -175,8 +545,19 @@ Middlewares/Tripperwares
 
 ---
 
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #2: No Reuse</h2>
 
-## Pitfalls #3: Naming of metrics
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vSbAYa7dP3_Gt6sU04lUpwLaVsZ3eeOfhb5eogcwrcxBm00faptAZOnB6kSVMEtJ9XGShF1ZcCLTRBt/pub?w=960&h=720"/>
+
+<Notes>
+
+Middlewares/Tripperwares
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #3: Naming convention</h2>
 
 <Notes>
 
@@ -184,7 +565,7 @@ Middlewares/Tripperwares
 
 ---
 
-## Pitfalls #4: Hardcoding project names in metrics
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #3: Harcoding project name</h2>
 
 <Notes>
 
