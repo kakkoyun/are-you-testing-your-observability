@@ -1587,22 +1587,24 @@ func dialClientConnTracker(...) (net.Conn, error) {
 }
 
 func dialErrToReason(err error) string {
-	if netErr, ok := err.(*net.OpError); ok {
-
-		switch nestErr := netErr.Err.(type) {
+	var e *net.OpError
+	if errors.As(err, &e) {
+		switch nestErr := e.Err.(type) {
 		case *net.DNSError:
 			return failedResolution
-
 		case *os.SyscallError:
 			if nestErr.Err == syscall.ECONNREFUSED {
 				return failedConnRefused
 			}
+
 			return failedUnknown
 		}
 
-		if netErr.Timeout() {
+		if e.Timeout() {
 			return failedTimeout
 		}
+	} else if err == context.Canceled || err == context.DeadlineExceeded {
+		return failedTimeout
 	}
 
 	return failedUnknown
@@ -1610,7 +1612,7 @@ func dialErrToReason(err error) string {
 
 ```
 
-```go 42[14:27],43,46[15:50],47,49,52[9:27],53,57
+```go subtitle="Map errors to label values" 42[14:27],43,44[15:50],46,49,52[9:27],53,59
 
 const (
 	failedResolution  = "resolution"
@@ -1649,22 +1651,24 @@ func dialClientConnTracker(...) (net.Conn, error) {
 }
 
 func dialErrToReason(err error) string {
-	if netErr, ok := err.(*net.OpError); ok {
-
-		switch nestErr := netErr.Err.(type) {
+	var e *net.OpError
+	if errors.As(err, &e) {
+		switch nestErr := e.Err.(type) {
 		case *net.DNSError:
 			return failedResolution
-
 		case *os.SyscallError:
 			if nestErr.Err == syscall.ECONNREFUSED {
 				return failedConnRefused
 			}
+
 			return failedUnknown
 		}
 
-		if netErr.Timeout() {
+		if e.Timeout() {
 			return failedTimeout
 		}
+	} else if err == context.Canceled || err == context.DeadlineExceeded {
+		return failedTimeout
 	}
 
 	return failedUnknown
