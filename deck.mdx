@@ -126,24 +126,27 @@ But also as one of the major part of our work is maintaining Prometheus and Than
 
 <Notes>
 
-So let's do something fun! Let's implement application level HTTP loadbalancer in Go? Why?
+But today will be fun! We will talk today about building loadbalancer today. Kind of.
+
+For demo purposes let's imagine we want to implement application level HTTP loadbalancer in Go?
+
+Why?
 Well these days with replicated microservices loadbalancer are crucial. HTTP is the most popular
 protocol this days for API communication, and application level loadbalancing gives us more control
-in terms of things like request based load balancing instead of connection based, graceful shutdowns,
+in terms of things like auditing, request based load balancing instead of connection based, graceful shutdowns,
 inspection and distribution of load.
 
 Appear:
 
 So let's say we implemented transparent loadbalancer as presented in this diagram. From high level design we have:
 
-* single HTTP server that implements ServerHTTP method, so handler via awesome ReverseProxy in standard httputil package.
-* ReverseProxy allows us to implement custom Transport, so RoundTripper interface which is to send
+> Single HTTP server that implements ServerHTTP method, so handler via awesome ReverseProxy in standard httputil package.
+> ReverseProxy allows us to implement custom Transport, so RoundTripper interface which is to send
 some request to remote backend.
-* our load balancing RoundTipper implementation called lbtranport is internally using then few components:
-
-  * Discoverer which gives us targets to proxy / loadbalance request to
-  * RoundRobinPicker which chooses right target to proxy user request to in round robin manner, so: replica 1, 2,3, then again 1, 2, 3
-  * And at the end it uses HTTP transport so, http.RoundTripper that belongs to picked target and proxy request through and proxy response back to the user.
+> Our load balancing RoundTipper implementation called lbtranport is internally using then few components:
+>> Discoverer which gives us targets to proxy / loadbalance request to
+>> RoundRobinPicker which chooses right target to proxy user request to in round robin manner, so: replica 1, 2,3, then again 1, 2, 3
+>> And at the end it uses HTTP transport so, http.RoundTripper that belongs to picked target and proxy request through and proxy response back to the user.
 
 </Notes>
 
@@ -174,9 +177,9 @@ Well...
 
 <Notes>
 
-     Does it actually work for 100% users or only me?
-     I have better things to do then manually hitting /lb endpoint to check if it works constantly, right?
-     Are all request fast enough?
+Maybe not really. It works for me but are we sure loadbalancer works as expected for all the time?
+Does it actually work for all the users or only me? How many Bad Gateway Errors it was returning over time?
+We can't really tell!
 
 </Notes>
 
@@ -187,8 +190,8 @@ Well...
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vTOKGrz6rfXVoHSfdNY4Pe901pdaJizjylwqyhkwMU53bRy9VXAJE4hTfGJrGiDncfg3Coh7Par67lu/pub?w=960&h=720"/>
 
 <Notes>
-
-    Is discovery really working? How many replicas it discovers, e.g through DNS?
+And what about discovery logic. Is DNS working? How many replicas it discovers?
+How many it was discovering yesterday at 5pm?
 
 </Notes>
 
@@ -200,9 +203,9 @@ Well...
 
 <Notes>
 
-    Is round robin picker, picking in round robin matter?
-    Is 1/3 of all requests actually going to replica 1? What's the distribution?
-    Why one backend is overloaded with request?
+Is round robin picker, picking in round robin matter?
+Is 1/3 of all requests actually going to replica 1? What's was the distribution overtime?
+Is one backend is overloaded with request despite loadbalancing?
 
 </Notes>
 
@@ -214,7 +217,8 @@ Well...
 
 <Notes>
 
-   Users reports that endpoint is slow, is it backend or latency of target of latency of loadbalancing?
+What if users reports that the endpoint is slow: is it the backend that is slow?
+Or is loadbalancing logic that is introducing the latency?
 
 </Notes>
 
@@ -226,7 +230,9 @@ Well...
 
 <Notes>
 
-  One of the nodes that loadbalancer running on OOM-ed, how much resources loadbalancer even use? Do we have a leak?
+What about resource consumption of the loadbalancer?
+What if one of the nodes that loadbalancer running on OOM-ed. Was loadbalancer responsible?
+Maybe we have a memory leak?
 
 </Notes>
 
@@ -237,8 +243,8 @@ Well...
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vTTmGW2ky_qxu9TEYUsnvQwHBe0lhTSc07UHHSCRsjHldVwm2fR2GpIEHZkZD5HbW3hObU4TXJnN7N4/pub?w=960&h=720"/>
 
 <Notes>
-
-  What version of binary we were running 2 days ago at 2pm? Something was wrong back then.
+Finally what version of the loadbalancer we were running 2 days ago at 2pm? Maybe something was wrong back then and we
+are not sure what version was actually rolled on Kubernetes...
 
 </Notes>
 
@@ -249,19 +255,19 @@ Well...
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vSvJ_htd2Q-qEzCkxjl057HEiGpnP97JLSdHVtjqlH4_huRIp8kgmhD0vRbufTCF4UWjkuje-l2Lli8/pub?w=960&h=720"/>
 
 <Notes>
+As you can see there are massive amount of questions that would be not answered when running the service like this on
+production, without proper monitoring.
 
-  As you can see there are plenty of questions that would be not answered when running service like this on
-  production, without proper monitoring. That's why in SRE book you will find monitorin as the foundation
-  of any system, BEFORE even the system itself!
+That's why in SRE book you will find monitoring as the foundation of any system, BEFORE even the system itself!
 
-  As you are familiar the some monitoring signals we can introduce are: traces, logs and metrics.
-  Guess what Which of those will give us answer to our questions like distribution of requests or histogram of tail latency?
+As you might be familiar, some monitoring signals we can introduce are: traces, logs and metrics.
+Guess which signal will give us answer to our questions like distribution of requests or histogram of tail latency?
 
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our loadbalancer with Prometheus metrics!</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our LB with Prometheus metrics!</h2>
 <br/>
 <br/>
 
@@ -280,49 +286,45 @@ Well...
 
 <Notes>
 
-	Metrics, yup!
+Metrics, yup!
 
-	Metrics most likely give us the answers to our questions.
-	Answer that is in comparison to logs and traces:
+Metrics most likely give us the answers to our questions.
+Answer that is in comparison to logs and traces:
 
-	* CHEAPer to calculate
-	* Near Real Time
-    * Clear and Actionable, so you can alert on those.
+1) CHEAPer to calculate
+Near Real Time
+Clear and Actionable, so you can alert on those.
 
-    In practice metrics should be the first item on monitoring list that you should do if you care to run
-    your service reliably.
+In practice metrics should be the first item on monitoring list that you should do if you care to run your service reliably.
 
-    Appear:
-
-    Why Prometheus though? Well I might be bias but Prometheus is currently one of the simplest and
-    cheapest option for collecting, storing and querying metrics as well as reliable alerting.
-    It is part of CNCF, fits for small solution as well as for bigger ones with help of cloud native projects like Thanos, Cortex, m3db and others
+2) Why Prometheus though? Well I might be bias but Prometheus is currently one of the simplest and
+cheapest option for collecting, storing and querying metrics as well as reliable alerting.
+It is part of CNCF, fits for small solution as well as for bigger ones with help of cloud native projects like Thanos, Cortex, m3db and others
 
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our loadbalancer with Prometheus metrics!</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our LB with Prometheus metrics!</h2>
 
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vT4N2dSOi0FhqFx1yVeNYPlJk6kT8o-7FdgvXvwpXiWVkK9MKM4SLflq4o3rJni9hEjWjrs7HKg0iOr/pub?w=960&h=720"/>
 
 <Notes>
 
-So.. how to add Prometheus metrics to our loadbalancer? Let's say we want to answer for how many
-users our loadbalancer is working?
+So.. how to add Prometheus metrics to our loadbalancer?
+Let's say we want to answer for how many users our loadbalancer is actually working?
 
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our loadbalancer with Prometheus metrics!</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our LB with Prometheus metrics!</h2>
 
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vREgXi-KbyUIdbSbaFsIQbkWE7ZrcPA0cBya53PB-jfIRL1E6uMvJC4HUc4Ca9Rujizv_-zQhEr3P_O/pub?w=960&h=720"/>
 
 <Notes>
 
-So.. how to add Prometheus metrics to our loadbalancer? We can do that by incrementing certain http_requests_total counter
-whenever a loadbalancing request occur, reporting method that was used, and HTTP status code that was returned.
+We can do that by incrementing some certain http_requests_total counter whenever a loadbalancing request occur, reporting method that was used, and HTTP status code that was returned.
 
 We can do that in few simple steps.
 
@@ -409,18 +411,18 @@ func init() {
 
 <Notes>
 
-1) During our talk We will be talking mainly about Prometheus client Go module, which is designed to help
+1) First of all we have to import Prometheus Go client library.
+During our talk we will be talking mainly about Prometheus client Go module, which is designed to help
 with instrumenting any Go application. It's tiny, heavily optimized and quite simple.
-So first, what we need to do is to import it.
 
 2) As a next step we need to define variable for the our counter of requests. We pick a name, a description
-and certain "labels" which will be our dimensions of this counter. Each unique value in any of those labels will
+and certain "labels" which will be our dimensions for this counter. Each unique value in any of those labels will
 result in totally new series in Prometheus system.
 
 3) Next step is to actually count our requests. Let's create a simple wrapper of http server which will increment
 the counter with the status code that the server returned and requested method.
 
-4) Something that is easy to forget it another step. The counter has to be registered somewhere in order
+4) Something that is easy to forget is another step: The counter has to be registered somewhere in order
 to be exposed for Prometheus. Let's do this once in `init` function and register it in GLOBAL
 Prometheus registry.
 
@@ -470,11 +472,11 @@ srv := &http.Server{Handler: mux}
 
 <Notes>
 
-1) So what we accomplished by registering this metric. That's a good question.
-We need last step which is:
+1) Let's focus on what we accomplish by registering this metric. It's important for the next step which is
 
-2) HTTP handler for metric page, which serves simple text page with all metrics.
-Once we add that our loadbalancer is correctly exposing our http_requests_total to the outside world.
+2) HTTP handler for metric page. It serves simple text page with all metrics.
+Once we add that to our loadbalancer, our server  is correctly exposing the http_requests_total counter
+we created to the outside world.
 
 </Notes>
 
@@ -516,9 +518,9 @@ http_requests_total{code="500", method="get"} 46
 </CodeSurfer>
 <Notes>
 
-1) So let's talk how we can use our metric in Prometheus. As you remember we defined and we increment it every HTTP request.
-2) Loadbalancer now serves /metrics page which exposes our metrics in Prometheus supported text format. As you can see
-each code and method are a seperate counter, we mostly have successes.
+1) How we can now use our metric? As you remember we defined this metric like this and we increment it every HTTP request.
+2) Loadbalancer now serves /metrics page which exposes our metrics in Prometheus supported text format.
+As you can see each code and method are a separate counter, with mostly successes.
 
 </Notes>
 
@@ -532,8 +534,8 @@ each code and method are a seperate counter, we mostly have successes.
 
 <Notes>
 
-3) We now can use running binary of Prometheus and point to the loadbalancer /metrics page. Prometheus then will
-visit this page which is called scrape every given interval and collect all exposed metrics.
+We now can use running binary of Prometheus and point to the loadbalancer /metrics page. Prometheus then will
+visit this page (which is called scrape) every given interval and collect all exposed metrics.
 
 </Notes>
 
@@ -568,13 +570,11 @@ import golang from './static/go.png'
 <img src={pitfalls} style="height: 50%; margin-top: 5%"/>
 
 <Notes>
-    So it looked easy right? And it is easy in most cases. However during this talk we would like
-    to present what we learnt during few year, while developing and reviewing instrumentation Go code that
-    is meant to be run on production, mainly in open source.
+So it looked easy right? And it is easy in most cases. However during this talk we would like
+to present what we learnt during few year, while developing and reviewing instrumentation Go code that
+is meant to be run on production, mainly in open source.
 
-    Together with Kemal wil go though few less or more advanced issues we seen and how to resolve them.
-    And we will be very honest with you. We are egoists. And we talk about this so when anyone in open or close seource
-    develop a Go modules we reuse or project we will use someday, will avoid those issues. (:
+Together with Kemal wil go though few less or more advanced issues we seen and how to resolve them.
 </Notes>
 
 ---
@@ -585,16 +585,14 @@ import golang from './static/go.png'
 <h6 style="text-align: center; margin: 0 10px 0 10px;">"magic is bad; global state is magic" by Peter Bourgon</h6>
 
 <Notes>
-    First one! Globals.
+First one! Globals.
 
-    There was a saying in Peter Bourgon blog post "A theory of Modern Go"
+There was a saying in Peter Bourgon blog post "A theory of Modern Go": magic is bad; global state is magic.
 
-    This is very true in case of Prometheus client, especially if you are instrumenting some Go package with metrics
-    that your project, or maybe anyone in open source is using.
+This is very true in case of Prometheus client, especially if you are instrumenting some Go package with metrics
+that your project, or maybe anyone in open source is using.
 
-    So let's focus on what can go wrong when using Globals when instrumenting our loadbalancer with metrics.
-
-    Ref: https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html
+So let's focus on what can go wrong when using Globals when instrumenting our loadbalancer with metrics.
 
 </Notes>
 
@@ -820,6 +818,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
+  reg := prometheus.NewRegistry()
   metrics := NewServerMetrics(reg)
 
   // For endpoint /one:
@@ -852,6 +851,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	reg.MustRegister(m.requestsTotal)
 	return ins
 }
+
+  reg := prometheus.NewRegistry()
+  metrics := NewServerMetrics(reg)
 
   metrics1 := NewServerMetrics(
     prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
@@ -894,6 +896,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
+  reg := prometheus.NewRegistry()
+  metrics := NewServerMetrics(reg)
+
   metrics1 := NewServerMetrics(
     prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
   )
@@ -930,12 +935,27 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 1) Let's take our example or http requests_total metric. We have 2 global states here.
 
-2) As you can see metric is a global, package level variable. When we register it we do it once per package import as well.
+2) As you can see metric is a global, package level variable. We register it once per package import as well.
 
-3) Second place of global state is Must register. What is hidden under prometheus.MustRegister is actually a Global
-Registerer.
+3) Second place of global state is MustRegister which is actually hiding a Global DefaultRegisterer.
 
 Now what's the issue here? Why is that problematic?
+
+4) No flexibility! What if you have more than one hanler, more than one endpoint?
+
+5) As you can see the inight you gain is pretty limited as the requests are counted per all endpoints. I can't tell
+what's the error rate for /three endpoint for example.
+
+Let's try to fix this!
+
+6) And by fixing I mean removing globals!
+
+7) Let's replace global variabl with some struct that you can instantiate. It will have constructor that will create
+our counter.
+
+8) Now you can create such object and use it everywhere.
+
+9) To eliminate last ..
 
 </Notes>
 
@@ -961,10 +981,12 @@ Now what's the issue here? Why is that problematic?
 
 <Notes>
 
-Why
+Lack of consistency. There where certain methods defined, like ...
 
 1) This helps to be sure you have main signals upfront of potential debugging or alerting needs.
 2) It helps to reuse common "RED method type" alerts, recording rules and dashboards. e.g mixin project.
+
+Let's focus on one method. RED.
 
 </Notes>
 
@@ -1003,7 +1025,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 ```diff 10[1:2] title="Pitfall #2: Lack of consistency" subtitle="D = Duration is Missing!"
 ```
 
-```go title="Pitfall #2: Consistency" subtitle="Red method satisfied"
+```go 4,16,17,18,19,20,21,22,23,24,32,33 title="Pitfall #2: Consistency" subtitle="Red method satisfied"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1050,6 +1072,8 @@ func ServerHTTP(w http.ResponseWriter, r *http.Request) {
 
 <Notes>
 
+Does our code satisfy RED method?
+
 </Notes>
 
 ---
@@ -1074,13 +1098,14 @@ Examples: <br/>
 <li>build_<b>info</b></li>
 </ul>
 </div></li>
-<li>Should have domain specific prefix (namespace e.g <b>http_</b>) for application/package.</li>
 </Appear>
 </div>
 </ul>
 <Notes>
 
 There is official Prometheus metric and label name convention!
+
+1. Something to rememeber
 
 </Notes>
 
@@ -1129,17 +1154,17 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-alert: HttpErrors5xx
+alert: HttpErrors502
   expr: |
-    sum(rate(http_requests_total{status=~"^5.."}[1m])) /
+    sum(rate(http_requests_total{status="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
   for: 5m
   labels:
     severity: error
   annotations:
-    summary: "HTTP errors 5xx (instance {{ $labels.instance }})"
+    summary: "HTTP errors 502 (instance {{ $labels.instance }})"
     description: |
-      "Too many HTTP requests with status 5xx (> 5%)\n  VALUE = {{ $value }}\n
+      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
       LABELS: {{ $labels }}"
 
 ```
@@ -1164,17 +1189,17 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-alert: HttpErrors5xx
+alert: HttpErrors502
   expr: |
-    sum(rate(http_requests_total{status=~"^5.."}[1m])) /
+    sum(rate(http_requests_total{status="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
   for: 5m
   labels:
     severity: error
   annotations:
-    summary: "HTTP errors 5xx (instance {{ $labels.instance }})"
+    summary: "HTTP errors 502 (instance {{ $labels.instance }})"
     description: |
-      "Too many HTTP requests with status 5xx (> 5%)\n  VALUE = {{ $value }}\n
+      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
       LABELS: {{ $labels }}"
 
 ```
@@ -1201,17 +1226,17 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ## BOOM! This alert will NEVER fire but also will not fail!
 ## Rename can cause issues like this in Alerts, Recording rules, Dashboards and more..
-alert: HttpErrors5xx
+alert: HttpErrors502
   expr: |
-    sum(rate(http_requests_total{status=~"^5.."}[1m])) /
+    sum(rate(http_requests_total{status="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
   for: 5m
   labels:
     severity: error
   annotations:
-    summary: "HTTP errors 5xx (instance {{ $labels.instance }})"
+    summary: "HTTP errors 502 (instance {{ $labels.instance }})"
     description: |
-      "Too many HTTP requests with status 5xx (> 5%)\n  VALUE = {{ $value }}\n
+      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
       LABELS: {{ $labels }}"
 
 ```
@@ -1219,6 +1244,8 @@ alert: HttpErrors5xx
 </CodeSurfer>
 
 <Notes>
+
+There is important aspect of naming as well: its stability.
 
 </Notes>
 
@@ -2908,6 +2935,10 @@ for _, tcase := range []struct {
 
 <Notes>
 	TODO: Kemal
+
+
+	readable, curl
+	Testing - test cases..
 </Notes>
 
 ---
