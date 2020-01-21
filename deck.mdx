@@ -652,6 +652,7 @@ func dialClientConnTracker(...) (net.Conn, error) {
 ---
 
 TODO: Kemal - Screenshot
+Metrics output with errors
 
 <Notes>
 
@@ -660,6 +661,7 @@ TODO: Kemal !!
 </Notes>
 
 ---
+
 <CodeSurfer>
 
 ```go 5:11,22:25
@@ -838,6 +840,68 @@ func dialErrToReason(err error) string {
 
 ```
 
+```go 42[14:27],43,46[15:50],47,49,52[9:27],53,57
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+// ...
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(...) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{...}, nil
+}
+
+func dialErrToReason(err error) string {
+	if netErr, ok := err.(*net.OpError); ok {
+
+		switch nestErr := netErr.Err.(type) {
+		case *net.DNSError:
+			return failedResolution
+
+		case *os.SyscallError:
+			if nestErr.Err == syscall.ECONNREFUSED {
+				return failedConnRefused
+			}
+			return failedUnknown
+		}
+
+		if netErr.Timeout() {
+			return failedTimeout
+		}
+	}
+
+	return failedUnknown
+}
+
+```
+
 </CodeSurfer>
 
 <Notes>
@@ -859,30 +923,31 @@ func dialErrToReason(err error) string {
 
 ```go title="Not initializing Metrics"
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
-}
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
 
-return m
+	return m
+}
 
 ```
 
 ```go title="Not initializing Metrics"
-m.failures.WithLabelValues("no_target_resolved").Add(30)
+m.connFailedTotal.WithLabelValues("unknown").Add(30)
 ```
 
 </CodeSurfer>
@@ -917,102 +982,111 @@ import uninitialized_metrics_marked from './static/uninitialized_metrics_marked.
 
 ```go title="Not initializing Metrics"
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
-}
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
 
-return m
+	return m
+}
 
 ```
 
 ```go title="Not initializing Metrics"
 
 const (
-	failedNoTargetAvailable = "no_target_available"
-	failedNoTargetResolved  = "no_target_resolved"
-	failedTimeout           = "timeout"
-	failedUnknown           = "unknown"
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
 )
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
-}
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
 
-return m
+	return m
+}
 
 ```
 
 ```go title="Not initializing Metrics"
 
 const (
-	failedNoTargetAvailable = "no_target_available"
-	failedNoTargetResolved  = "no_target_resolved"
-	failedTimeout           = "timeout"
-	failedUnknown           = "unknown"
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
 )
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	// Initialize metric with labels.
+	// It is possible to call this method without using the returned Counter to only
+	// create the new Counter but leave it at its starting value 0.
+	m.connFailedTotal.WithLabelValues(failedResolution)
+	m.connFailedTotal.WithLabelValues(failedConnRefused)
+	m.connFailedTotal.WithLabelValues(failedTimeout)
+	m.connFailedTotal.WithLabelValues(failedUnknown)
+
+	return m
 }
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+```
 
-// Initialize CounterVec.
-// It is possible to call this method without using the returned Counter to only
-// create the new Counter but leave it at its starting value 0.
-m.failures.WithLabelValues(failedUnknown)
-m.failures.WithLabelValues(failedNoTargetAvailable)
-m.failures.WithLabelValues(failedTimeout)
-m.failures.WithLabelValues(failedNoTargetResolved)
-
-return m
-
+```go title="Not initializing Metrics"
+m.connFailedTotal.WithLabelValues("unknown").Add(30)
 ```
 
 </CodeSurfer>
 
 <Notes>
 	TODO: Kemal
+
+	BTW: Counters without labels are initialized without an additional step.
 </Notes>
 
 ---
@@ -1030,16 +1104,6 @@ import initialized_metrics from './static/initialized_metrics.png'
 import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 
 <Image src={initialized_metrics_marked} size='contain'/>
-
-<Notes>
-	TODO: Kemal
-</Notes>
-
----
-
-BTW: Counters are initialized by default.
-
-TODO: Kemal
 
 <Notes>
 	TODO: Kemal
@@ -1222,13 +1286,13 @@ prometheus.LinearBuckets(0.01, 0.01, 10)
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #8: Histogram Cardinality Explotion</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #8: Histogram Cardinality Explosion</h2>
 
 ---
 
 <CodeSurfer>
 
-```go title="Histogram Cardinality Explotion" 13
+```go title="Histogram Cardinality Explosion" 13
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -1276,7 +1340,7 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```go title="Histogram Cardinality Explotion" 13
+```go title="Histogram Cardinality Explosion" 13
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -1630,8 +1694,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 ```go title="prometheus/testutil here to help"
 
 import (
-	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 ```
