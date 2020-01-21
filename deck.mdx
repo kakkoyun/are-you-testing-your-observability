@@ -1277,20 +1277,6 @@ Let's see an example.
 
 ---
 
-<Notes>
-
-KEMAL
-
-Let's define a metric called `conntrackdialer_conn_failed_total`, to track the number of failed connections we have in our loadbalancer.
-
-And let's have a label called `reason` to track failure reasons.
-
-And then open our connection and whatever needs to be done and if we fail, let's increment our metric with corresponding error.
-
-Everything looks good, let's run our loadbalancer and get our metrics.
-
-</Notes>
-
 <CodeSurfer>
 
 ```go title="Unbounded Cardinality" subtitle="Define a metric" 7:14
@@ -1368,24 +1354,21 @@ conntrack_dialer_conn_failed_total{reason="Invalid value for argument: client: n
 
 </CodeSurfer>
 
----
-
 <Notes>
 
 KEMAL
 
-That is not what we expacted.
-What went wrong?
+Let's define a metric called `conntrackdialer_conn_failed_total`, to track the number of failed connections we have in our loadbalancer.
 
-We shoudn't use arbitrary data as label values.
+And let's have a label called `reason` to track failure reasons.
 
-We should always keep them in bounds.
+And then open our connection and whatever needs to be done and if we fail, let's increment our metric with corresponding error.
 
-A better approach would be to predefine them.
-
-So let's see how we can fix it.
+Everything looks good, let's run our loadbalancer and get our metrics.
 
 </Notes>
+
+---
 
 <CodeSurfer>
 
@@ -1628,6 +1611,23 @@ func dialErrToReason(err error) string {
 
 </CodeSurfer>
 
+<Notes>
+
+KEMAL
+
+That is not what we expacted.
+What went wrong?
+
+We shoudn't use arbitrary data as label values.
+
+We should always keep them in bounds.
+
+A better approach would be to predefine them.
+
+So let's see how we can fix it.
+
+</Notes>
+
 ---
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Not Initialized Metrics</h2>
@@ -1643,18 +1643,6 @@ Let's have a look at an example.
 </Notes>
 
 ---
-
-<Notes>
-
-As always let's start with defining a metric.
-
-1)
-An for this example as well let's use the same metric that we got familiar with `conntrack_dialer_conn_failed_total`.
-
-2)
-Let's set a value with a specfic reason for this counter.
-
-</Notes>
 
 <CodeSurfer>
 
@@ -1686,6 +1674,20 @@ func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
 ```go subtitle=""
 m.connFailedTotal.WithLabelValues("unknown").Add(30)
 ```
+
+</CodeSurfer>
+
+<Notes>
+
+As always let's start with defining a metric.
+
+1)
+An for this example as well let's use the same metric that we got familiar with `conntrack_dialer_conn_failed_total`.
+
+2)
+Let's set a value with a specfic reason for this counter.
+
+</Notes>
 
 ---
 
