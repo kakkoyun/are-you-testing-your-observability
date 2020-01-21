@@ -9,6 +9,8 @@ import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
 import redhat from './static/red_hat_logo.png'
 
+import ss_tsdb_01 from './static/ss_tsdb_01.png'
+
 export const theme = shadesOfPurple;
 
 <Head>
@@ -647,11 +649,20 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
+```git
+# HELP conntrack_dialer_conn_failed_total Total number of connections failed to dial by the dialer.
+# TYPE conntrack_dialer_conn_failed_total counter
+conntrack_dialer_conn_failed_total{reason="<nil>"} 1
+conntrack_dialer_conn_failed_total{reason="lookup example.com on localhost: err..."} 1
+conntrack_dialer_conn_failed_total{reason="lookup thanos.io on 8.8.8.8: err..."} 1
+conntrack_dialer_conn_failed_total{reason="lookup redhat.com on localhost: err..."} 1
+conntrack_dialer_conn_failed_total{reason="syscall: unimplemented EpollWait"} 1
+conntrack_dialer_conn_failed_total{reason="syscall.SIGINT: series of unfortunate things happened"} 1
+conntrack_dialer_conn_failed_total{reason="unix: test returned fd in TestEpoll"} 1
+conntrack_dialer_conn_failed_total{reason="Invalid value for argument: client: nil"} 1
+```
+
 </CodeSurfer>
-
----
-
-TODO: Kemal - Screenshot
 
 <Notes>
 
@@ -660,6 +671,12 @@ TODO: Kemal !!
 </Notes>
 
 ---
+
+# 😲
+
+---
+
+
 <CodeSurfer>
 
 ```go 5:11,22:25
@@ -838,6 +855,68 @@ func dialErrToReason(err error) string {
 
 ```
 
+```go 42[14:27],43,46[15:50],47,49,52[9:27],53,57
+
+const (
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
+)
+
+// ...
+
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	return m
+}
+
+func dialClientConnTracker(...) (net.Conn, error) {
+	conn, err := parentDialContextFunc(ctx, ntk, addr)
+	if err != nil {
+		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
+		return conn, err
+	}
+
+	return &clientConnTracker{...}, nil
+}
+
+func dialErrToReason(err error) string {
+	if netErr, ok := err.(*net.OpError); ok {
+
+		switch nestErr := netErr.Err.(type) {
+		case *net.DNSError:
+			return failedResolution
+
+		case *os.SyscallError:
+			if nestErr.Err == syscall.ECONNREFUSED {
+				return failedConnRefused
+			}
+			return failedUnknown
+		}
+
+		if netErr.Timeout() {
+			return failedTimeout
+		}
+	}
+
+	return failedUnknown
+}
+
+```
+
 </CodeSurfer>
 
 <Notes>
@@ -859,30 +938,31 @@ func dialErrToReason(err error) string {
 
 ```go title="Not initializing Metrics"
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
-}
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
 
-return m
+	return m
+}
 
 ```
 
 ```go title="Not initializing Metrics"
-m.failures.WithLabelValues("no_target_resolved").Add(30)
+m.connFailedTotal.WithLabelValues("unknown").Add(30)
 ```
 
 </CodeSurfer>
@@ -917,102 +997,111 @@ import uninitialized_metrics_marked from './static/uninitialized_metrics_marked.
 
 ```go title="Not initializing Metrics"
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
-}
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
 
-return m
+	return m
+}
 
 ```
 
 ```go title="Not initializing Metrics"
 
 const (
-	failedNoTargetAvailable = "no_target_available"
-	failedNoTargetResolved  = "no_target_resolved"
-	failedTimeout           = "timeout"
-	failedUnknown           = "unknown"
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
 )
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
-}
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
 
-return m
+	return m
+}
 
 ```
 
 ```go title="Not initializing Metrics"
 
 const (
-	failedNoTargetAvailable = "no_target_available"
-	failedNoTargetResolved  = "no_target_resolved"
-	failedTimeout           = "timeout"
-	failedUnknown           = "unknown"
+	failedResolution  = "resolution"
+	failedConnRefused = "refused"
+	failedTimeout     = "timeout"
+	failedUnknown     = "unknown"
 )
 
-type Metrics struct {
-	failures  *prometheus.CounterVec
+type DialerMetrics struct {
+	connFailedTotal      *prometheus.CounterVec
 }
 
-m := &Metrics{
-	failures: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Subsystem: "lbtransport",
-		Name:      "proxied_failed_requests_total",
-		Help:      "Total number failed proxy round trips.",
-	}, []string{"reason"}),
+func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
+	m := &DialerMetrics{
+		connFailedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Subsystem: "conntrack",
+				Name:      "dialer_conn_failed_total",
+				Help:      "Total number of connections failed to dial by the dialer.",
+			}, []string{"reason"}),
+	}
+
+	if reg != nil {
+		reg.MustRegister(m.connClosedTotal)
+	}
+
+	// Initialize metric with labels.
+	// It is possible to call this method without using the returned Counter to only
+	// create the new Counter but leave it at its starting value 0.
+	m.connFailedTotal.WithLabelValues(failedResolution)
+	m.connFailedTotal.WithLabelValues(failedConnRefused)
+	m.connFailedTotal.WithLabelValues(failedTimeout)
+	m.connFailedTotal.WithLabelValues(failedUnknown)
+
+	return m
 }
 
-if reg != nil {
-	reg.MustRegister(
-		m.failures,
-	)
-}
+```
 
-// Initialize CounterVec.
-// It is possible to call this method without using the returned Counter to only
-// create the new Counter but leave it at its starting value 0.
-m.failures.WithLabelValues(failedUnknown)
-m.failures.WithLabelValues(failedNoTargetAvailable)
-m.failures.WithLabelValues(failedTimeout)
-m.failures.WithLabelValues(failedNoTargetResolved)
-
-return m
-
+```go title="Not initializing Metrics"
+m.connFailedTotal.WithLabelValues("unknown").Add(30)
 ```
 
 </CodeSurfer>
 
 <Notes>
 	TODO: Kemal
+
+	BTW: Counters without labels are initialized without an additional step.
 </Notes>
 
 ---
@@ -1030,16 +1119,6 @@ import initialized_metrics from './static/initialized_metrics.png'
 import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 
 <Image src={initialized_metrics_marked} size='contain'/>
-
-<Notes>
-	TODO: Kemal
-</Notes>
-
----
-
-BTW: Counters are initialized by default.
-
-TODO: Kemal
 
 <Notes>
 	TODO: Kemal
@@ -1202,8 +1281,8 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 ```go title="Poorly chosen Histogram buckets"
 
 DefaultBuckets = []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
-prometheus.ExponentialBuckets(0.1, 1.5, 5),
-prometheus.LinearBuckets(0.01, 0.01, 10)
+prometheus.ExponentialBuckets(.1, 1.5, 5),
+prometheus.LinearBuckets(.01, .01, 10)
 
 ```
 
@@ -1222,13 +1301,37 @@ prometheus.LinearBuckets(0.01, 0.01, 10)
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #8: Histogram Cardinality Explotion</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #8: Histogram Cardinality Explosion</h2>
 
 ---
 
 <CodeSurfer>
 
-```go title="Histogram Cardinality Explotion" 13
+```go title="Histogram Cardinality Explosion"
+
+type ServerMetrics struct {
+	requestDuration  *prometheus.HistogramVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	ins := &ServerMetrics{
+		requestDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "http_request_duration_seconds",
+				Help:    "Tracks the latencies for HTTP requests.",
+				Buckets: []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3},
+			},
+			[]string{"code", "method"},
+		),
+	}
+	reg.MustRegister(ins.requestDuration)
+	return ins
+}
+
+```
+
+```go title="Histogram Cardinality Explosion"
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -1276,7 +1379,7 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```go title="Histogram Cardinality Explotion" 13
+```go title="Histogram Cardinality Explosion" 13
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -1305,22 +1408,26 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
 http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.001"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.01"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.1"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.3"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.6"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="3"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="6"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="9"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="20"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="30"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="60"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="90"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="120"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 30
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.08239999999999999
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 30
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.01"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.1"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.3"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.6"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="3"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="6"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="9"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="20"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="30"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="40"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="50"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="60"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="90"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="120"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="150"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="200"} 18
+http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 18
+http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.0480237
+http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 18
 
 ```
 
@@ -1330,6 +1437,27 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 localhost:8082 says hello! (:
 
 ```
+
+</CodeSurfer>
+
+---
+
+# 💥
+
+<Notes>
+	TODO: Kemal
+	Show metrics with yolo many buckets
+	Problem: Cardinality (explain why)
+	Solution: SLO based!
+
+	Use real life example, too large request or too small requests
+	Too many buckets
+	Too less buckets
+</Notes>
+
+---
+
+<CodeSurfer>
 
 ```git
 
@@ -1426,37 +1554,20 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 
 ---
 
-# 💥
-
-<Notes>
-	TODO: Kemal
-	Show metrics with yolo many buckets
-	Problem: Cardinality (explain why)
-	Solution: SLO based!
-
-	Use real life example, too large request or too small requests
-	Too many buckets
-	Too less buckets
-</Notes>
-
----
-
-TODO: Kemal - Screenshot
-
-Promdash head cardinality screeen
+<Image src={ss_tsdb_01} size='contain'/>
 
 <Notes>
 
 TODO: Kemal !!
 
+Promdash head cardinality screeen
+
 </Notes>
+
 
 ---
 
-
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #9: Histogram vs Summary</h2>
-
-TODO: Fix title
 
 ---
 
@@ -1536,7 +1647,7 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```go title="Histogram vs Summary" subtitle="Do not forget to set your obsjectives!"
+```go title="Histogram vs Summary" subtitle="Do not forget to set your objectives!"
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.SummaryVec
@@ -1630,8 +1741,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 ```go title="prometheus/testutil here to help"
 
 import (
-	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/prometheus/prometheus/util/testutil"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
 ```
@@ -2170,4 +2280,5 @@ Reference:
 * [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus/testutil)
 * [Prometheus - Histogram](https://prometheus.io/docs/practices/histograms/)
 * [Prometheus Histograms – Past, Present, and Future](https://www.youtube.com/watch?v=7sQFkaMCyEI)
+* [Roboust Perception - Cardinality is the key](https://www.robustperception.io/cardinality-is-key)
 * [Gopherize me](https://gopherize.me/)
