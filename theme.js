@@ -1,41 +1,34 @@
-import React from 'react'
+import React, { useState, } from 'react'
+import * as themes from 'mdx-deck/themes'
 
-export const theme = {
-  // Customize your presentation theme here.
-  // Read the docs for more info:
-  // https://github.com/jxnblk/mdx-deck/blob/master/docs/theming.md
-  // https://github.com/jxnblk/mdx-deck/blob/master/docs/themes.md
-};
+const names = Object.keys(themes)
 
-const Provider = props => (
-  <div>
-    {props.children}
-    <div
-      css={{
-        color: '#9EFEFF',
-        position: 'fixed',
-        left: 0,
-        bottom: 0,
-        margin: 16,
-      }}
-    >
-      @bwplotka
+const Provider = props => {
+  const [name, _] = useState(names[0])
+
+  const baseTheme = themes[name]
+  const theme = typeof baseTheme === 'function' ? baseTheme({}) : baseTheme
+
+  return (
+    <div>
+      {props.children}
+      <div
+        css={{
+          color: theme.colors.text,
+          position: 'fixed',
+          right: 0,
+          bottom: 0,
+          margin: 16,
+          fontSize: '20px'
+        }}
+      >
+        <div>@bwplotka</div>
+        <div>@kakkoyun</div>
+      </div>
     </div>
-    <div
-      css={{
-        color: '#9EFEFF',
-        position: 'fixed',
-        right: 0,
-        bottom: 0,
-        margin: 16,
-      }}
-    >
-      @kakkoyun
-    </div>
-  </div>
-)
+  )
+}
 
 export default {
   Provider,
-  // theme
 }

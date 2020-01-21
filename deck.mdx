@@ -98,9 +98,9 @@ I am in Prometheus team and I am a co-author of Thanos project, which is a durab
 
 With me there is Kemal.
 
-Hello everyone, my name is Kemal Akkoyun. I am also an engineer working with Bartek at Red Hat, in the OpenShift Monitoring team.
-I'm into Go, Prometheus, Kubernetes ecosystems. I love working with distributed systems and observability tools.
-And I try to contribute to all of them, as much as I can.
+Hello everyone, my name is Kemal Akkoyun. I am also a software engineer working with Bartek at Red Hat, in the OpenShift Monitoring team.
+I'm also into everything related to Go, Prometheus and Kubernetes. I love working with distributed systems and observability tools.
+I try to contribute to all of them, as much as I can.
 
 </Notes>
 
@@ -1931,11 +1931,11 @@ import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 
 KEMAL
 
-This is exactly waht we want.
+This is exactly what we want.
 
 Now we can be sure that this counter could be used in alerts.
 
-TODO: More...
+TODO: More clarification.
 
 </Notes>
 
@@ -1944,6 +1944,34 @@ TODO: More...
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Poorly Chosen Histogram Buckets</h2>
 
 ---
+
+<Notes>
+
+KEMAL
+
+TODO: Kemal
+
+	Histograms and summaries are more complex metric types. Not only does a single histogram or summary create a multitude of time series, it is also more difficult to use these metric types correctly. This section helps you to pick and configure the appropriate metric type for your use case.
+	Histograms and summaries both sample observations, typically request durations or response sizes. They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
+
+Show metrics with yolo many buckets
+TODO: Problem: Cardinality (explain why)
+TODO: Solution: SLO based!
+TODO: Define histograms!
+TODO: Why do we need buckets?
+
+Histograms are more complex metric types compare to metrics and gauges.
+However underneath they are just a couple of counters with labels.
+
+They do sampled observations, typically on request durations or response sizes.
+They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
+
+They accummulate theur observation in to buckets. You have to define those buckets when you create them.
+As a result performance of your histogram tightly depends on your bucket layout and coming up with a correct layout is more art then science :)
+
+Lets see some bad bucket layouts and how to fix them.
+
+</Notes>
 
 <CodeSurfer>
 
@@ -2102,28 +2130,6 @@ prometheus.LinearBuckets(.01, .01, 10)
 ```
 
 </CodeSurfer>
-
-<Notes>
-
-TODO: Kemal
-
-Show metrics with yolo many buckets
-TODO: Problem: Cardinality (explain why)
-TODO: Solution: SLO based!
-TODO: Define histograms!
-TODO: Why do we need buckets?
-
-Use real life example, too large request or too small requests
-1.
-Too many buckets
-
-2.
-Too less buckets
-
-3,
-	TODO: Adjusting bucket boundaries!
-
-</Notes>
 
 ---
 
