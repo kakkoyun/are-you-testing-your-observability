@@ -10,10 +10,6 @@ import prometheus from './static/prometheus_logo.svg'
 import redhat from './static/red_hat_logo.png'
 
 import ss_tsdb_01 from './static/ss_tsdb_01.png'
-import ss_tsdb_02 from './static/ss_tsdb_02.png'
-import ss_tsdb_03 from './static/ss_tsdb_03.png'
-import ss_tsdb_04 from './static/ss_tsdb_04.png'
-import ss_tsdb_05 from './static/ss_tsdb_05.png'
 
 export const theme = shadesOfPurple;
 
@@ -653,12 +649,20 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
+```git
+# HELP conntrack_dialer_conn_failed_total Total number of connections failed to dial by the dialer.
+# TYPE conntrack_dialer_conn_failed_total counter
+conntrack_dialer_conn_failed_total{reason="<nil>"} 1
+conntrack_dialer_conn_failed_total{reason="lookup example.com on localhost: err..."} 1
+conntrack_dialer_conn_failed_total{reason="lookup thanos.io on 8.8.8.8: err..."} 1
+conntrack_dialer_conn_failed_total{reason="lookup redhat.com on localhost: err..."} 1
+conntrack_dialer_conn_failed_total{reason="syscall: unimplemented EpollWait"} 1
+conntrack_dialer_conn_failed_total{reason="syscall.SIGINT: series of unfortunate things happened"} 1
+conntrack_dialer_conn_failed_total{reason="unix: test returned fd in TestEpoll"} 1
+conntrack_dialer_conn_failed_total{reason="Invalid value for argument: client: nil"} 1
+```
+
 </CodeSurfer>
-
----
-
-TODO: Kemal - Screenshot
-Metrics output with errors
 
 <Notes>
 
@@ -667,6 +671,11 @@ TODO: Kemal !!
 </Notes>
 
 ---
+
+# 😲
+
+---
+
 
 <CodeSurfer>
 
@@ -1272,8 +1281,8 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 ```go title="Poorly chosen Histogram buckets"
 
 DefaultBuckets = []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
-prometheus.ExponentialBuckets(0.1, 1.5, 5),
-prometheus.LinearBuckets(0.01, 0.01, 10)
+prometheus.ExponentialBuckets(.1, 1.5, 5),
+prometheus.LinearBuckets(.01, .01, 10)
 
 ```
 
@@ -1521,59 +1530,10 @@ Promdash head cardinality screeen
 
 </Notes>
 
----
-
-<Image src={ss_tsdb_02} size='contain'/>
-
-<Notes>
-
-TODO: Kemal !!
-
-Promdash head cardinality screeen
-
-</Notes>
-
----
-
-<Image src={ss_tsdb_03} size='contain'/>
-
-<Notes>
-
-TODO: Kemal !!
-
-Promdash head cardinality screeen
-
-</Notes>
-
----
-
-<Image src={ss_tsdb_04} size='contain'/>
-
-<Notes>
-
-TODO: Kemal !!
-
-Promdash head cardinality screeen
-
-</Notes>
-
----
-
-<Image src={ss_tsdb_05} size='contain'/>
-
-<Notes>
-
-TODO: Kemal !!
-
-Promdash head cardinality screeen
-
-</Notes>
 
 ---
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #9: Histogram vs Summary</h2>
-
-TODO: Fix title
 
 ---
 
