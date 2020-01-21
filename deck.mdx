@@ -4,6 +4,7 @@ import { Head, Image, Appear, Notes, Invert, Split } from "mdx-deck"
 
 import { CodeSurfer, CodeSurferColumns, Step } from "code-surfer"
 import { shadesOfPurple } from "@code-surfer/themes"
+import theme from './theme'
 
 import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
@@ -11,7 +12,10 @@ import redhat from './static/red_hat_logo.png'
 
 import ss_tsdb_01 from './static/ss_tsdb_01.png'
 
-export const theme = shadesOfPurple;
+export const themes = [
+	shadesOfPurple,
+	theme,
+];
 
 <Head>
 	<title>Are you testing your Observability?</title>
