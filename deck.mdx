@@ -265,24 +265,27 @@ Well...
 <br/>
 <br/>
 
+<ul>
 <Appear>
-<span>Cheap</span>
-<span>Near Real Time</span>
-<span>Aggregate-able & Actionable = Alerts</span>
+<li>Cheap</li>
+<li>Near Real Time</li>
+<li>Actionable (Alert-able)</li>
 <div>
     <img src={prometheus} style="height: 50%; margin: auto; display: block; margin-top: 100px;" />
     <p>http://prometheus.io</p>
 
 </div>
 </Appear>
+</ul>
 
 <Notes>
 
 	Metrics, yup!
 
-	Metrics will give us the answer to our question. Answer that is in comparison to logs and traces:
+	Metrics most likely give us the answers to our questions.
+	Answer that is in comparison to logs and traces:
 
-	* CHEAP to calculate
+	* CHEAPer to calculate
 	* Near Real Time
     * Clear and Actionable, so you can alert on those.
 
@@ -293,7 +296,20 @@ Well...
 
     Why Prometheus though? Well I might be bias but Prometheus is currently one of the simplest and
     cheapest option for collecting, storing and querying metrics as well as reliable alerting.
-    It fits for small solution as well as for bigger ones with help of projects like Thanos, Cortex, m3db and others
+    It is part of CNCF, fits for small solution as well as for bigger ones with help of cloud native projects like Thanos, Cortex, m3db and others
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our loadbalancer with Prometheus metrics!</h2>
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vT4N2dSOi0FhqFx1yVeNYPlJk6kT8o-7FdgvXvwpXiWVkK9MKM4SLflq4o3rJni9hEjWjrs7HKg0iOr/pub?w=960&h=720"/>
+
+<Notes>
+
+So.. how to add Prometheus metrics to our loadbalancer? Let's say we want to answer for how many
+users our loadbalancer is working?
 
 </Notes>
 
@@ -305,8 +321,10 @@ Well...
 
 <Notes>
 
-    So.. how to add Prometheus metrics to our loadbalancer? Let's say we want to add counter of requests made
-    to our loadbalancer server instance. We can add this counter in few simple steps.
+So.. how to add Prometheus metrics to our loadbalancer? We can do that by incrementing certain http_requests_total counter
+whenever a loadbalancing request occur, reporting method that was used, and HTTP status code that was returned.
+
+We can do that in few simple steps.
 
 </Notes>
 
@@ -314,13 +332,13 @@ Well...
 
 <CodeSurfer>
 
-```go title="Server HTTP request counter: Simple example"
+```go title="Server HTTP request counter"
 
 import "github.com/prometheus/client_golang/prometheus"
 
 ```
 
-```go 5,6,7,8,9,10 title="Server HTTP request counter: Simple example"
+```go 5,6,7,8,9,10 title="Server HTTP request counter"
 
 import "github.com/prometheus/client_golang/prometheus"
 
@@ -335,7 +353,7 @@ var (
 
 ```
 
-```go 13,14,18,19 title="Server HTTP request counter: Simple example"
+```go 13,14,18,19 title="Server HTTP request counter"
 
 import "github.com/prometheus/client_golang/prometheus"
 
@@ -354,12 +372,12 @@ func ServerHTTP(w http.ResponseWriter, r *http.Request) {
   next.ServeHTTP(statusRec, r)
 
   // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Inc()
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 }
 
 ```
 
-```go 23 title="Server HTTP request counter: Simple example"
+```go 23 title="Server HTTP request counter"
 
 import "github.com/prometheus/client_golang/prometheus"
 
@@ -378,7 +396,7 @@ func ServerHTTP(w http.ResponseWriter, r *http.Request) {
   next.ServeHTTP(statusRec, r)
 
   // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Inc()
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 }
 
 func init() {
@@ -391,13 +409,28 @@ func init() {
 
 <Notes>
 
+1) During our talk We will be talking mainly about Prometheus client Go module, which is designed to help
+with instrumenting any Go application. It's tiny, heavily optimized and quite simple.
+So first, what we need to do is to import it.
+
+2) As a next step we need to define variable for the our counter of requests. We pick a name, a description
+and certain "labels" which will be our dimensions of this counter. Each unique value in any of those labels will
+result in totally new series in Prometheus system.
+
+3) Next step is to actually count our requests. Let's create a simple wrapper of http server which will increment
+the counter with the status code that the server returned and requested method.
+
+4) Something that is easy to forget it another step. The counter has to be registered somewhere in order
+to be exposed for Prometheus. Let's do this once in `init` function and register it in GLOBAL
+Prometheus registry.
+
 </Notes>
 
 ---
 
 <CodeSurferColumns>
 
-<Step title="Server HTTP request counter: Simple example">
+<Step title="Server HTTP request counter" subtitle="Why we need to register?">
 
 ```go 3
 
@@ -410,7 +443,7 @@ func init() {
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vREgXi-KbyUIdbSbaFsIQbkWE7ZrcPA0cBya53PB-jfIRL1E6uMvJC4HUc4Ca9Rujizv_-zQhEr3P_O/pub?w=960&h=720"/>
 
 </Step>
-<Step title="Server HTTP request counter: Simple example">
+<Step title="Server HTTP request counter" subtitle="Registry is used by Prometheus /metrics handler">
 
 ```go 7,12
 
@@ -437,19 +470,11 @@ srv := &http.Server{Handler: mux}
 
 <Notes>
 
-So what we accomplished?
+1) So what we accomplished by registering this metric. That's a good question.
+We need last step which is:
 
-</Notes>
-
----
-
-<h2 style="text-align: center; margin: 0px 10px 0 10px;">Prometheus can now collect metrics from our Loadbalancer</h2>
-
-<img src="https://docs.google.com/drawings/d/e/2PACX-1vQazezdwEI7-_Naf_aMSGipdrSNMoDgc9YtrFyO_ttl1kuyeI7jn8lFtfVk8jQ35BQEAg2m8CvYGp3r/pub?w=590&h=701"/>
-
-<Notes>
-
-So what we accomplished?
+2) HTTP handler for metric page, which serves simple text page with all metrics.
+Once we add that our loadbalancer is correctly exposing our http_requests_total to the outside world.
 
 </Notes>
 
@@ -459,7 +484,7 @@ import graph_requests from './static/graph-requests.png'
 
 <CodeSurfer>
 
-```go 4,6 title="From code to graph" subtitle="code"
+```go 4,6 title="From code to graph" subtitle="We defined & instrumented our metric"
 var (
 	serverRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -471,7 +496,7 @@ var (
 
 ```
 
-```go 4,6,12,13 title="From code to graph" subtitle="/metric"
+```go 4,6,10,13,14 title="From code to graph" subtitle="It is now exposed under /metrics"
 var (
 	serverRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -481,18 +506,34 @@ var (
 	)
 )
 
+// Part of response from /metrics HTTP endpoint.
 # HELP http_requests_total Tracks the number of HTTP requests.
 # TYPE http_requests_total counter
-http_requests_total{code="200",handler="/lb",method="get"} 1089
-http_requests_total{code="500",handler="/lb",method="get"} 46
-
+http_requests_total{code="200", method="get"} 1089
+http_requests_total{code="500", method="get"} 46
 ```
 
 </CodeSurfer>
+<Notes>
+
+1) So let's talk how we can use our metric in Prometheus. As you remember we defined and we increment it every HTTP request.
+2) Loadbalancer now serves /metrics page which exposes our metrics in Prometheus supported text format. As you can see
+each code and method are a seperate counter, we mostly have successes.
+
+</Notes>
+
+---
+
+<h2 style="text-align: center; margin: 0px 10px 0 10px;">Prometheus can now collect metrics from our Loadbalancer</h2>
+
+*Pulling e.g every 15 seconds*
+
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vQazezdwEI7-_Naf_aMSGipdrSNMoDgc9YtrFyO_ttl1kuyeI7jn8lFtfVk8jQ35BQEAg2m8CvYGp3r/pub?w=590&h=701"/>
 
 <Notes>
 
-So what we accomplished?
+3) We now can use running binary of Prometheus and point to the loadbalancer /metrics page. Prometheus then will
+visit this page which is called scrape every given interval and collect all exposed metrics.
 
 </Notes>
 
@@ -504,62 +545,508 @@ So what we accomplished?
 
 <Notes>
 
-So what we accomplished?
+With that we can after some time, visit Prometheus UI where we can produce graphs. For example we can query
+the number of requests per minute by code and method. We can see that per minute we have 120 requests in total,
+with some small portion of those being error responses.
 
 </Notes>
 
 ---
 
-import pitfalls from './static/pitfalls.png'
+import pitfalls from './static/pitfall.gif'
+import golang from './static/go.png'
 
-<h1 style="text-align: center; margin: 0px 10px 0 10px;">Pitfalls</h1>
+<div>
+    <h1 style="text-align: center; margin: 0px 10px 0 10px;">
+        <img src={golang} style="width: 7%; margin-top: 5%"/>
+        &nbsp;+&nbsp;
+        <img src={prometheus} style="width: 10%; margin-top: 5%"/>
+        &nbsp;&nbsp;Pitfalls
+    </h1>
+</div>
 
 <img src={pitfalls} style="height: 50%; margin-top: 5%"/>
 
 <Notes>
-    Especially when we talk about libraries.. but.. most of our code is technically libraries. If you want to be
-    friendly open source project any of your packages (unless to hide those under `internal`) can be reused
-    by other projects. In fact probably you want those to be reused to join forces, have more hands to help on
-    particular functionality that your package gives.
+    So it looked easy right? And it is easy in most cases. However during this talk we would like
+    to present what we learnt during few year, while developing and reviewing instrumentation Go code that
+    is meant to be run on production, mainly in open source.
 
-	 Now, even if you don't care about reusing in other project, your project is using your own package as library as well,
-	 so it's crucial to allow certain flexibility, and some of the pitfalls we will be looking at are limiting use of
-	 your Go package.
+    Together with Kemal wil go though few less or more advanced issues we seen and how to resolve them.
+    And we will be very honest with you. We are egoists. And we talk about this so when anyone in open or close seource
+    develop a Go modules we reuse or project we will use someday, will avoid those issues. (:
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #1: Globals</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #1: Global Registry</h2>
+<br/>
+<br/>
+<h6 style="text-align: center; margin: 0 10px 0 10px;">"magic is bad; global state is magic" by Peter Bourgon</h6>
 
 <Notes>
-	Bartek
+    First one! Globals.
+
+    There was a saying in Peter Bourgon blog post "A theory of Modern Go"
+
+    This is very true in case of Prometheus client, especially if you are instrumenting some Go package with metrics
+    that your project, or maybe anyone in open source is using.
+
+    So let's focus on what can go wrong when using Globals when instrumenting our loadbalancer with metrics.
+
+    Ref: https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html
+
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #2: No Reuse</h2>
+<CodeSurfer>
+
+```go title="Pitfall #1: Global Registry" subtitle="We have 2 global variables here."
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(serverRequestsTotal)
+}
+
+  // ...
+  // Increment our counter with written status code and request method.
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+```diff 3,4,5,6,7,8 title="Pitfall #1: Global Registry" subtitle="Package-level metric variable."
+```
+
+```go 12[16:80] title="Pitfall #1: Global Registry" subtitle="and global DefaultRegisterer."
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+func init() {
+	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
+}
+
+  // ...
+  // Increment our counter with written status code and request method.
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+```go 15,16,17,18,19,20,21,22 title="Pitfall #1: Globals: No flexibility" subtitle="What if I have more handlers than one?"
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+func init() {
+	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
+}
+
+  // For endpoint /one:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+```go title="Pitfall #1: Globals: No flexibility" subtitle="Nice, but for what handler?"
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+func init() {
+	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
+}
+
+  // For endpoint /one:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  # HELP http_requests_total Tracks the number of HTTP requests.
+  # TYPE http_requests_total counter
+  http_requests_total{code="200", method="get"} 2445
+  http_requests_total{code="500", method="get"} 53
+
+```
+
+```go title="Pitfall #1: Getting rid of globals."
+
+var (
+	serverRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Tracks the number of HTTP requests.",
+		}, []string{"code", "method"},
+	)
+)
+
+func init() {
+	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
+}
+
+  // For endpoint /one:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+```go title="Pitfall #1: Getting rid of globals." subtitle="Introduce instance of metrics!"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics() *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	return m
+}
+
+func init() {
+	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
+}
+
+  // For endpoint /one:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+```go title="Pitfall #1: Getting rid of globals." subtitle="Create new instance of it"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics() *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	return m
+}
+
+  metrics := NewServerMetrics()
+
+func init() {
+	prometheus.DefaultRegisterer.MustRegister(metrics.requestsTotal)
+}
+
+  // For endpoint /one:
+  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+```go title="Pitfall #1: Getting rid of globals." subtitle="Register using Custom Registerer (composition!)"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+  metrics := NewServerMetrics(reg)
+
+  // For endpoint /one:
+  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+``` go title="Pitfall #1: Getting rid of globals." subtitle="Now it's package-level user friendly!"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+  metrics1 := NewServerMetrics(
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
+  )
+  metrics2 := NewServerMetrics(
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
+  )
+  metrics3 := NewServerMetrics(
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
+  )
+
+  // For endpoint /one:
+  metrics1.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  metrics2.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  metrics3.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+```
+
+```go title="Pitfall #1: Getting rid of globals." subtitle="We can have request counter per handler (:"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+  metrics1 := NewServerMetrics(
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
+  )
+  metrics2 := NewServerMetrics(
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
+  )
+  metrics3 := NewServerMetrics(
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
+  )
+
+  // For endpoint /one:
+  metrics1.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /two:
+  metrics2.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  // For endpoint /three:
+  metrics3.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+
+  # HELP http_requests_total Tracks the number of HTTP requests.
+  # TYPE http_requests_total counter
+  http_requests_total{handler="/one", code="200", method="get"} 1445
+  http_requests_total{handler="/one", code="500", method="get"} 23
+  http_requests_total{handler="/two", code="200", method="get"} 445
+  http_requests_total{handler="/two", code="500", method="get"} 0
+  http_requests_total{handler="/three", code="200", method="get"} 645
+  http_requests_total{handler="/three", code="500", method="get"} 40
+
+```
+
+</CodeSurfer>
 
 <Notes>
 
-Middlewares/Tripperwares
+1) Let's take our example or http requests_total metric. We have 2 global states here.
+
+2) As you can see metric is a global, package level variable. When we register it we do it once per package import as well.
+
+3) Second place of global state is Must register. What is hidden under prometheus.MustRegister is actually a Global
+Registerer.
+
+Now what's the issue here? Why is that problematic?
 
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #2: No Reuse</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #2: Lack of Consistency</h2>
+<br/>
+<br/>
+<Appear>
 
-<img src="https://docs.google.com/drawings/d/e/2PACX-1vSbAYa7dP3_Gt6sU04lUpwLaVsZ3eeOfhb5eogcwrcxBm00faptAZOnB6kSVMEtJ9XGShF1ZcCLTRBt/pub?w=960&h=720"/>
+<h5 style="text-align: center; margin: 0 10px 0 10px;">The Four Golden Signals, USE method, RED method etc...</h5>
+
+<div>
+<br/>
+<br/>
+<ul>
+<li><span style="color: red">R</span>: Requests per second (saturation).</li>
+<li><span style="color: red">E</span>: Errors per second.</li>
+<li><span style="color: red">D</span>: Duration (tail latency).</li>
+</ul>
+</div>
+</Appear>
 
 <Notes>
 
-Middlewares/Tripperwares
+Why
+
+1) This helps to be sure you have main signals upfront of potential debugging or alerting needs.
+2) It helps to reuse common "RED method type" alerts, recording rules and dashboards. e.g mixin project.
 
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #3: Naming convention</h2>
+<CodeSurfer>
+
+```go title="Pitfall #2: Lack of consistency" subtitle="Does this satisfy RED method?"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+```
+
+```diff 11,13 title="Pitfall #2: Lack of consistency" subtitle="R = Requests"
+```
+
+```diff 13[25:30] title="Pitfall #2: Lack of consistency" subtitle="E = Errors (code =! 2..)"
+```
+
+```diff 10[1:2] title="Pitfall #2: Lack of consistency" subtitle="D = Duration is Missing!"
+```
+
+```go title="Pitfall #2: Consistency" subtitle="Red method satisfied"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+	requestDuration  *prometheus.HistogramVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+        requestDuration: prometheus.NewHistogramVec(
+            prometheus.HistogramOpts{
+                Name:    "http_request_duration_seconds",
+                Help:    "Tracks the latencies for HTTP requests.",
+                Buckets: []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120},
+            },
+            []string{"code", "method"},
+        ),
+	}
+	reg.MustRegister(m.requestsTotal, m.requestDuration)
+	return ins
+}
+
+// Top level ServerHTTP handler.
+func ServerHTTP(w http.ResponseWriter, r *http.Request) {
+  start := time.Now()
+  defer metrics.requestDuration.WithLabelValues(statusRec.Status(), r.Method)).Observe(time.Since(start))
+
+  statusRec := newStatusRecorder(w)
+  next.ServeHTTP(statusRec, r)
+
+  // Increment our counter with written status code and request method.
+  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+}
+
+```
+
+</CodeSurfer>
 
 <Notes>
 
@@ -567,7 +1054,169 @@ Middlewares/Tripperwares
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #4: Harcoding project name</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #3: Not conforming naming convention</h2>
+
+<br/>
+<br/>
+<ul>
+<div style="font-size: 80%;">
+<Appear>
+<li><a href="https://prometheus.io/docs/practices/naming/#metric-and-label-naming">https://prometheus.io/docs/practices/naming/#metric-and-label-naming</a></li>
+<li>
+Name should have a suffix describing the unit, in plural form. Note that an accumulating count has *_total* as a suffix, in addition to the unit if applicable
+Examples: <br/>
+<div style="font-style: italic;">
+<ul>
+<li>http_request_duration_<b>seconds</b></li>
+<li>node_memory_usage_<b>bytes</b></li>
+<li>http_requests_<b>total</b></li>
+<li>process_cpu_<b>seconds_total</b></li>
+<li>build_<b>info</b></li>
+</ul>
+</div></li>
+<li>Should have domain specific prefix (namespace e.g <b>http_</b>) for application/package.</li>
+</Appear>
+</div>
+</ul>
+<Notes>
+
+There is official Prometheus metric and label name convention!
+
+</Notes>
+
+---
+
+<CodeSurfer>
+
+```go title="Pitfall #3: Naming: stability"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+```
+
+```go title="Pitfall #3: Naming: stability" subtitle="Let's say we alert on too many 5xx responses."
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+alert: HttpErrors5xx
+  expr: |
+    sum(rate(http_requests_total{status=~"^5.."}[1m])) /
+      sum(rate(http_requests_total[1m])) * 100 > 5
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    summary: "HTTP errors 5xx (instance {{ $labels.instance }})"
+    description: |
+      "Too many HTTP requests with status 5xx (> 5%)\n  VALUE = {{ $value }}\n
+      LABELS: {{ $labels }}"
+
+```
+
+```go 11[29:37] title="Pitfall #3: Naming: stability" subtitle="Let's say we are renaming metric..."
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_protocol_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+alert: HttpErrors5xx
+  expr: |
+    sum(rate(http_requests_total{status=~"^5.."}[1m])) /
+      sum(rate(http_requests_total[1m])) * 100 > 5
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    summary: "HTTP errors 5xx (instance {{ $labels.instance }})"
+    description: |
+      "Too many HTTP requests with status 5xx (> 5%)\n  VALUE = {{ $value }}\n
+      LABELS: {{ $labels }}"
+
+```
+
+```go title="Pitfall #3: Naming: stability" subtitle="Ups..."
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_protocol_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+## BOOM! This alert will NEVER fire but also will not fail!
+## Rename can cause issues like this in Alerts, Recording rules, Dashboards and more..
+alert: HttpErrors5xx
+  expr: |
+    sum(rate(http_requests_total{status=~"^5.."}[1m])) /
+      sum(rate(http_requests_total[1m])) * 100 > 5
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    summary: "HTTP errors 5xx (instance {{ $labels.instance }})"
+    description: |
+      "Too many HTTP requests with status 5xx (> 5%)\n  VALUE = {{ $value }}\n
+      LABELS: {{ $labels }}"
+
+```
+
+</CodeSurfer>
 
 <Notes>
 
@@ -575,7 +1224,8 @@ Middlewares/Tripperwares
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #5: Unbounded Cardinality</h2>
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Unbounded Cardinality</h2>
 
 <Notes>
 	TODO: Kemal
@@ -925,7 +1575,7 @@ func dialErrToReason(err error) string {
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #6: Not initializing Metrics</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Not Initialized Metrics</h2>
 
 <Notes>
 	TOOD: Kemal
@@ -1126,7 +1776,7 @@ import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #7: Poorly chosen Histogram buckets</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #6: Poorly Chosen Histogram Buckets</h2>
 
 ---
 
@@ -1301,7 +1951,7 @@ prometheus.LinearBuckets(.01, .01, 10)
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #8: Histogram Cardinality Explosion</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #7: Histogram Cardinality Explosion</h2>
 
 ---
 
@@ -1564,10 +2214,7 @@ Promdash head cardinality screeen
 
 </Notes>
 
-
----
-
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #9: Histogram vs Summary</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #8: Histogram vs Summary</h2>
 
 ---
 
@@ -1692,9 +2339,7 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #10: Not Testing</h2>
-
-TODO: Kemal - Fix title
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #9: No Testing</h2>
 
 ---
 
@@ -2247,16 +2892,15 @@ for _, tcase := range []struct {
 
 <ul>
 	<Appear>
-		<li>Pitfall #1</li>
-		<li>Pitfall #2</li>
-		<li>Pitfall #3</li>
-		<li>Pitfall #4</li>
-		<li>Pitfall #5</li>
-		<li>Pitfall #6</li>
-		<li>Pitfall #7</li>
-		<li>Pitfall #8</li>
-		<li>Pitfall #9</li>
-		<li>Pitfall #10</li>
+		<li>Pitfall #1: Global Registry</li>
+		<li>Pitfall #2: Lack of Consistency</li>
+		<li>Pitfall #3: Conforming Naming</li>
+		<li>Pitfall #4: Unbounded Cardinality</li>
+		<li>Pitfall #5: Not Initialized Metrics</li>
+		<li>Pitfall #6: Poorly Chosen Histogram Buckets</li>
+		<li>Pitfall #7: Histogram Cardinality Explosion</li>
+		<li>Pitfall #8: Histogram vs Summary</li>
+		<li>Pitfall #9: No Testing</li>
 	</Appear>
 </ul>
 
@@ -2282,3 +2926,5 @@ Reference:
 * [Prometheus Histograms – Past, Present, and Future](https://www.youtube.com/watch?v=7sQFkaMCyEI)
 * [Roboust Perception - Cardinality is the key](https://www.robustperception.io/cardinality-is-key)
 * [Gopherize me](https://gopherize.me/)
+* [Why globals are magic](https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html)
+* [Red Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/)
