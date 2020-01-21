@@ -92,7 +92,11 @@ Thanos Contributor<br/><br/>
 My name is Bartek Plotka, I am an engineer working at Red Hat in the Monitoring team, I love open source and Go.
 I am in Prometheus team and I am a co-author of Thanos project, which is a durable system for scaling Prometheus.
 
-With me there is Kemal: Kemal TODO intro
+With me there is Kemal.
+
+Hello everyone, my name is Kemal Akkoyun. I am also an engineer working with Bartek at Red Hat, in the OpenShift Monitoring team.
+I'm into Go, Prometheus, Kubernetes ecosystems. I love working with distributed systems and observability tools.
+And I try to contribute to all of them, as much as I can.
 
 </Notes>
 
@@ -108,7 +112,6 @@ With me there is Kemal: Kemal TODO intro
 
 <Notes>
 
-We are both working in the same monitoring team for Red Hat.
 We are building scalable Observability solutions and platforms for OpenShift.
 But also as one of the major part of our work is maintaining Prometheus and Thanos projects on a daily basis.
 
@@ -1251,25 +1254,49 @@ There is important aspect of naming as well: its stability.
 
 ---
 
-
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Unbounded Cardinality</h2>
 
 <Notes>
-	TODO: Kemal
 
-	Add path or similar to labels
-	Show bad example of passing raw error as label name of lbtransport metric for fails (!): https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38
-	Why it matters, instead do as here: prepare predefine reasons: https://github.com/observatorium/observable-demo/blob/master/pkg/lbtransport/transport.go#L38.
+KEMAL
+
+When we talk about Prometheus it always comes down to cardinality.
+
+What is cardinality actually? So the cardinality, in Prometheus context, is the amount of unique time-series you have in youir system.
+
+And don't forget each label value that you add to your metric creates another time=series.
+
+So for example, if you have a label containing HTTP methods would have a cardinality of 2 if you had only GET and POST in your application.
+
+Labels what make Prometheus stong. However you should always watch out how you use them.
+Things could get out of control pretty quickly.
+
+Let's see an example.
+
 </Notes>
 
 ---
 
+<Notes>
+
+KEMAL
+
+Let's define a metric called `conntrackdialer_conn_failed_total`, to track the number of failed connections we have in our loadbalancer.
+
+And let's have a label called `reason` to track failure reasons.
+
+And then open our connection and whatever needs to be done and if we fail, let's increment our metric with corresponding error.
+
+Everything looks good, let's run our loadbalancer and get our metrics.
+
+</Notes>
+
 <CodeSurfer>
 
-```go title="Unbounded Cardinality" 7:14
+```go title="Unbounded Cardinality" subtitle="Define a metric" 7:14
 
 type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
+	connFailedTotal *prometheus.CounterVec
 }
 
 func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
@@ -1291,10 +1318,10 @@ func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
 
 ```
 
-```go 24:28
+```go 24:28 subtitle="Open a connection"
 
 type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
+	connFailedTotal *prometheus.CounterVec
 }
 
 func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
@@ -1326,7 +1353,7 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
-```git
+```git subtitle="Let's check out our metrics... 😲"
 # HELP conntrack_dialer_conn_failed_total Total number of connections failed to dial by the dialer.
 # TYPE conntrack_dialer_conn_failed_total counter
 conntrack_dialer_conn_failed_total{reason="<nil>"} 1
@@ -1341,22 +1368,28 @@ conntrack_dialer_conn_failed_total{reason="Invalid value for argument: client: n
 
 </CodeSurfer>
 
+---
+
 <Notes>
 
-TODO: Kemal !!
+KEMAL
+
+That is not what we expacted.
+What went wrong?
+
+We shoudn't use arbitrary data as label values.
+
+We should always keep them in bounds.
+
+A better approach would be to predefine them.
+
+So let's see how we can fix it.
 
 </Notes>
 
----
-
-# 😲
-
----
-
-
 <CodeSurfer>
 
-```go 5:11,22:25
+```go 5:11,22:25 subtitle="How can we improve this?"
 
 // ...
 
@@ -1389,7 +1422,7 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
-```go
+```go subtitle="Never use arbitrary data as label values"
 
 const (
 	failedResolution  = "resolution"
@@ -1428,7 +1461,6 @@ func dialClientConnTracker(...) (net.Conn, error) {
 }
 
 ```
-
 
 ```go
 
@@ -1470,7 +1502,7 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
-```go
+```go subtitle="Never use arbitrary data as label values"
 
 const (
 	failedResolution  = "resolution"
@@ -1596,24 +1628,37 @@ func dialErrToReason(err error) string {
 
 </CodeSurfer>
 
-<Notes>
-	TODO: Kemal
-</Notes>
-
 ---
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Not Initialized Metrics</h2>
 
 <Notes>
-	TOOD: Kemal
-	Counter Metrics are fine, CounterVec!!
+
+KEMAL
+
+Another common pitfall is not to initialize your metrics with labels.
+
+Let's have a look at an example.
+
 </Notes>
 
 ---
 
+<Notes>
+
+As always let's start with defining a metric.
+
+1)
+An for this example as well let's use the same metric that we got familiar with `conntrack_dialer_conn_failed_total`.
+
+2)
+Let's set a value with a specfic reason for this counter.
+
+</Notes>
+
 <CodeSurfer>
 
-```go title="Not initializing Metrics"
+```go title="Not initializing Metrics" subtitle="Define a metric"
 
 type DialerMetrics struct {
 	connFailedTotal      *prometheus.CounterVec
@@ -1638,15 +1683,9 @@ func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
 
 ```
 
-```go title="Not initializing Metrics"
+```go subtitle=""
 m.connFailedTotal.WithLabelValues("unknown").Add(30)
 ```
-
-</CodeSurfer>
-
-<Notes>
-	TODO: Kemal
-</Notes>
 
 ---
 
@@ -1655,7 +1694,13 @@ import uninitialized_metrics from './static/uninitialized_metrics.png'
 <Image src={uninitialized_metrics} size='contain'/>
 
 <Notes>
-	TODO: Kemal
+
+KEMAL
+
+As you can see, although we have our increment metric.
+
+We do not see the actual change with our `increase` function.
+
 </Notes>
 
 ---
@@ -1665,10 +1710,32 @@ import uninitialized_metrics_marked from './static/uninitialized_metrics_marked.
 <Image src={uninitialized_metrics_marked} size='contain'/>
 
 <Notes>
-	TODO: Kemal
+
+KEMAL
+
+This is not something we want.
+
 </Notes>
 
 ---
+
+<Notes>
+
+KEMAL
+
+Let's fix this.
+
+1)
+We can start with predefining our labels as constants.
+This is not strictly necessary but it always helps me.
+
+2)
+And then let's use `WithLabelValues` method to initialize our counters.
+
+3)
+Let's run it again see what happens.
+
+</Notes>
 
 <CodeSurfer>
 
@@ -1775,12 +1842,6 @@ m.connFailedTotal.WithLabelValues("unknown").Add(30)
 
 </CodeSurfer>
 
-<Notes>
-	TODO: Kemal
-
-	BTW: Counters without labels are initialized without an additional step.
-</Notes>
-
 ---
 
 import initialized_metrics from './static/initialized_metrics.png'
@@ -1788,7 +1849,11 @@ import initialized_metrics from './static/initialized_metrics.png'
 <Image src={initialized_metrics} size='contain'/>
 
 <Notes>
-	TODO: Kemal
+
+KEMAL
+
+Now we see actual increment value.
+
 </Notes>
 
 ---
@@ -1798,7 +1863,15 @@ import initialized_metrics_marked from './static/initialized_metrics_marked.png'
 <Image src={initialized_metrics_marked} size='contain'/>
 
 <Notes>
-	TODO: Kemal
+
+KEMAL
+
+This is exactly waht we want.
+
+Now we can be sure that this counter could be used in alerts.
+
+TODO: More...
+
 </Notes>
 
 ---
@@ -1966,14 +2039,25 @@ prometheus.LinearBuckets(.01, .01, 10)
 </CodeSurfer>
 
 <Notes>
-	TODO: Kemal
-	Show metrics with yolo many buckets
-	Problem: Cardinality (explain why)
-	Solution: SLO based!
 
-	Use real life example, too large request or too small requests
-	Too many buckets
-	Too less buckets
+TODO: Kemal
+
+Show metrics with yolo many buckets
+TODO: Problem: Cardinality (explain why)
+TODO: Solution: SLO based!
+TODO: Define histograms!
+TODO: Why do we need buckets?
+
+Use real life example, too large request or too small requests
+1.
+Too many buckets
+
+2.
+Too less buckets
+
+3,
+	TODO: Adjusting bucket boundaries!
+
 </Notes>
 
 ---
@@ -2108,13 +2192,6 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```console
-
-➜ curl -XPOST localhost:8080/lb
-localhost:8082 says hello! (:
-
-```
-
 </CodeSurfer>
 
 ---
@@ -2123,13 +2200,8 @@ localhost:8082 says hello! (:
 
 <Notes>
 	TODO: Kemal
-	Show metrics with yolo many buckets
-	Problem: Cardinality (explain why)
-	Solution: SLO based!
 
-	Use real life example, too large request or too small requests
-	Too many buckets
-	Too less buckets
+	Bucket layouts
 </Notes>
 
 ---
@@ -2235,138 +2307,15 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 
 <Notes>
 
-TODO: Kemal !!
+TODO: Kemal
 
 Promdash head cardinality screeen
 
 </Notes>
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #8: Histogram vs Summary</h2>
-
 ---
 
-<CodeSurfer>
-
-```go title="Histogram vs Summary"
-
-type ServerMetrics struct {
-	requestDuration  *prometheus.HistogramVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	ins := &ServerMetrics{
-		requestDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "http_request_duration_seconds",
-				Help:    "Tracks the latencies for HTTP requests.",
-			},
-			[]string{"code", "method"},
-		),
-	}
-	reg.MustRegister(ins.requestDuration)
-	return ins
-}
-
-```
-
-```git
-
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.005"} 58
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.01"} 71
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.025"} 75
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.05"} 80
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.1"} 80
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.25"} 81
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.5"} 82
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1"} 82
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="2.5"} 82
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="5"} 82
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="10"} 82
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 82
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 1.0698880999999996
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 82
-
-```
-
-```go title="Histogram vs Summary"
-
-type ServerMetrics struct {
-	requestDuration  *prometheus.SummaryVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	ins := &ServerMetrics{
-		requestDuration: prometheus.NewSummaryVec(
-			prometheus.SummaryOpts{
-				Name: "http_request_duration_seconds",
-				Help: "Tracks the latencies for HTTP requests.",
-			},
-			[]string{"code", "method"},
-		),
-	}
-	reg.MustRegister(ins.requestDuration)
-	return ins
-}
-
-```
-
-```git
-
-# HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
-# TYPE http_request_duration_seconds summary
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.15244579999999996
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 59
-
-```
-
-```go title="Histogram vs Summary" subtitle="Do not forget to set your objectives!"
-
-type ServerMetrics struct {
-	requestDuration  *prometheus.SummaryVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	ins := &ServerMetrics{
-		requestDuration: prometheus.NewSummaryVec(
-			prometheus.SummaryOpts{
-				Name: "http_request_duration_seconds",
-				Help: "Tracks the latencies for HTTP requests.",
-				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-			},
-			[]string{"code", "method"},
-		),
-	}
-	reg.MustRegister(ins.requestDuration)
-	return ins
-}
-
-```
-
-```git
-
-# HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
-# TYPE http_request_duration_seconds summary
-http_request_duration_seconds{code="200",handler="/metrics",method="get",quantile="0.5"} 0.0018995
-http_request_duration_seconds{code="200",handler="/metrics",method="get",quantile="0.9"} 0.0054216
-http_request_duration_seconds{code="200",handler="/metrics",method="get",quantile="0.99"} 0.009909
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.0775536
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 28
-
-```
-
-</CodeSurfer>
-
-<Notes>
-	TODO: Kemal
-	Using summary where histogram would be cheaper, explain differences
-</Notes>
-
----
-
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #9: No Testing</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #8: No Testing</h2>
 
 ---
 
@@ -2417,6 +2366,7 @@ import (
 )
 
 ```
+
 </CodeSurfer>
 
 ---
@@ -2538,47 +2488,7 @@ for _, tcase := range []struct {
 			testutil.Ok(t, err)
 			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
 		}
-	}); !ok {
-		return
-	}
-}
 
-```
-
-```go title="Not Testing"
-
-for _, tcase := range []struct {
-	targets   []string
-	responses []response
-	excluded  []string
-
-	expectedHost string
-	expectedErr  error
-
-	failedNoTargetAvailable float64
-	failedNoTargetResolved  float64
-	failedUnknown           float64
-	successes               float64
-}{
-	{
-		targets:      []string{"a"},
-		responses:    []response{okResponse("a")},
-		expectedHost: "a",
-
-		successes: 1,
-	},
-} {
-	if ok := t.Run("", func(t *testing.T) {
-		reset(tcase)
-
-		resp, err := lb.RoundTrip(httptest.NewRequest("GET", "http://whatever", nil))
-		if tcase.expectedErr != nil {
-			testutil.NotOk(t, err)
-			testutil.Equals(t, tcase.expectedErr.Error(), err.Error())
-		} else {
-			testutil.Ok(t, err)
-			testutil.Equals(t, tcase.expectedHost, resp.Request.URL.Host)
-		}
 		testutil.Equals(t, tcase.excluded, picker.excluded)
 		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
 	}); !ok {
@@ -2625,6 +2535,7 @@ for _, tcase := range []struct {
 		testutil.Equals(t, tcase.excluded, picker.excluded)
 		testutil.Equals(t, discovery.Targets(), picker.lastSeenTargets)
 
+		// Test metrics
 		testutil.Equals(t, tcase.successes, promtestutil.ToFloat64(metrics.successes))
 		testutil.Equals(t, tcase.failedNoTargetAvailable, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetAvailable)))
 		testutil.Equals(t, tcase.failedNoTargetResolved, promtestutil.ToFloat64(metrics.failures.WithLabelValues(failedNoTargetResolved)))
@@ -2900,6 +2811,7 @@ for _, tcase := range []struct {
 
 <Notes>
 	TODO: Kemal
+
 	No tests
 	Solution: testutil! lbtransport metrics, reliability! Shows how you can use metrics, what behaviour to expect!
 
@@ -2908,10 +2820,6 @@ for _, tcase := range []struct {
 
 	prometheus/testutil here to help
 </Notes>
-
----
-
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Sum things Up? Summary?</h2>
 
 ---
 
@@ -2926,19 +2834,12 @@ for _, tcase := range []struct {
 		<li>Pitfall #5: Not Initialized Metrics</li>
 		<li>Pitfall #6: Poorly Chosen Histogram Buckets</li>
 		<li>Pitfall #7: Histogram Cardinality Explosion</li>
-		<li>Pitfall #8: Histogram vs Summary</li>
-		<li>Pitfall #9: No Testing</li>
+		<li>Pitfall #8: No Testing</li>
 	</Appear>
 </ul>
 
-## TODO: Kemal
-
 <Notes>
 	TODO: Kemal
-
-
-	readable, curl
-	Testing - test cases..
 </Notes>
 
 ---
@@ -2947,9 +2848,22 @@ for _, tcase := range []struct {
 
 <img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/red_hat_white.png" style="height: 20%"/>
 
-Reference:
+# Links:
+
 * [Observable Demo](https://github.com/observatorium/observable-demo)
 * [Slides](https://github.com/kakkoyun/are-you-testing-your-observability)
+
+<Notes>
+
+You can find working example of our demo and the slides in those links.
+And we will be shiaring our slides.
+
+</Notes>
+
+---
+
+# Reference:
+
 * [Thanos](https://thanos.io)
 * [Prometheus](https://prometheus.io)
 * [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus/testutil)
@@ -2958,4 +2872,4 @@ Reference:
 * [Roboust Perception - Cardinality is the key](https://www.robustperception.io/cardinality-is-key)
 * [Gopherize me](https://gopherize.me/)
 * [Why globals are magic](https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html)
-* [Red Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/)
+* [Red Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services)
