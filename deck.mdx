@@ -1441,6 +1441,19 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 
 ---
 
+TODO: Kemal - Screenshot
+
+Promdash head cardinality screeen
+
+<Notes>
+
+TODO: Kemal !!
+
+</Notes>
+
+---
+
+
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfalls #9: Histogram vs Summary</h2>
 
 TODO: Fix title
@@ -1520,6 +1533,42 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 # TYPE http_request_duration_seconds summary
 http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.15244579999999996
 http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 59
+
+```
+
+```go title="Histogram vs Summary" subtitle="Do not forget to set your obsjectives!"
+
+type ServerMetrics struct {
+	requestDuration  *prometheus.SummaryVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	ins := &ServerMetrics{
+		requestDuration: prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Name: "http_request_duration_seconds",
+				Help: "Tracks the latencies for HTTP requests.",
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			},
+			[]string{"code", "method"},
+		),
+	}
+	reg.MustRegister(ins.requestDuration)
+	return ins
+}
+
+```
+
+```git
+
+# HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
+# TYPE http_request_duration_seconds summary
+http_request_duration_seconds{code="200",handler="/metrics",method="get",quantile="0.5"} 0.0018995
+http_request_duration_seconds{code="200",handler="/metrics",method="get",quantile="0.9"} 0.0054216
+http_request_duration_seconds{code="200",handler="/metrics",method="get",quantile="0.99"} 0.009909
+http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.0775536
+http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 28
 
 ```
 
@@ -2119,4 +2168,6 @@ Reference:
 * [Thanos](https://thanos.io)
 * [Prometheus](https://prometheus.io)
 * [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus/testutil)
+* [Prometheus - Histogram](https://prometheus.io/docs/practices/histograms/)
+* [Prometheus Histograms – Past, Present, and Future](https://www.youtube.com/watch?v=7sQFkaMCyEI)
 * [Gopherize me](https://gopherize.me/)
