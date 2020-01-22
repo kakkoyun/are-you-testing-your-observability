@@ -4,7 +4,7 @@
   "scripts": {
     "start": "mdx-deck deck.mdx",
     "build": "mdx-deck build deck.mdx",
-    "pdf": "website-pdf https://are-you-testing-your-observability.now.sh/print -o deck.pdf",
+    "pdf": "website-pdf https://are-you-testing-your-observability.now.sh/print --width 1024 --height 600 -o deck.pdf",
     "pdf-local": "echo \"Run npm start on 8000 port first!\" && website-pdf http://localhost:8000/print -o deck.pdf",
     "test": "echo \"there are no tests\"",
     "help": "mdx-deck"
