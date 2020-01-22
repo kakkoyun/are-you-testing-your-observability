@@ -2004,7 +2004,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 ```diff 11,13 title="Pitfall #3: Lack of consistency" subtitle="R = Requests"
 ```
 
-```diff 13[25:30] title="Pitfall #3: Lack of consistency" subtitle="E = Errors (code =! 2..)"
+```diff 13[25:30] title="Pitfall #3: Lack of consistency" subtitle="E = Errors (code =! 5..)"
 ```
 
 ```diff 10[1:2] title="Pitfall #3: Lack of consistency" subtitle="D = Duration is Missing!"
@@ -2073,6 +2073,14 @@ Now I will pass mic to Kemal.
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Naming: Not conforming naming convention</h2>
 
+<Notes>
+
+KEMAL
+
+One of the most common pitfall is of course about naming!
+
+</Notes>
+
 ---
 
 <h3 style="text-align: center; margin: 0 10px 0 10px;"> There is an official documentation on naming conventions</h3>
@@ -2133,7 +2141,7 @@ process_cpu_seconds_total
 
 ```
 
-```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="_info suffix for info metrics"
+```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="_info suffix for metadata metrics"
 
 http_request_duration_seconds
 node_memory_usage_bytes
@@ -2305,7 +2313,7 @@ alert: HttpToMany502Errors
 ---
 import harry_potter from './static/harry_potter.gif'
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Cardinality: Unbounded metrics</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Cardinality: Unbounded labels</h2>
 
 <img src={harry_potter} style="height: 50%; width: 80%; margin-top: 5%"/>
 
@@ -2359,7 +2367,7 @@ So let's see how we can fix it.
 
 <CodeSurfer>
 
-```go title="Pitfall #5: Cardinality: Unbounded metrics" subtitle="Define a metric" 7:14
+```go title="Pitfall #5: Cardinality: Unbounded labels" subtitle="Define a metric" 7:14
 
 type DialerMetrics struct {
 	connFailedTotal *prometheus.CounterVec
@@ -2703,8 +2711,6 @@ func dialErrToReason(err error) string {
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #6: Cardinality: Histogram Explosion</h2>
 
----
-
 <Notes>
 
 KEMAL
@@ -2726,6 +2732,14 @@ By default they expose, 12-14 counters.
 So anything you add, builds up.
 
 Let's see an example.
+
+</Notes>
+
+---
+
+<Notes>
+
+KEMAL
 
 1)
 Again let's start with defining our good old http request duration metric with a default set of labels.
@@ -2806,7 +2820,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```git
+```git title="Pitfall #6: Histogram Cardinality Explosion"
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -2858,7 +2872,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```git
+```git title="Pitfall #6: Histogram Cardinality Explosion"
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -2898,7 +2912,7 @@ import itisfine from './static/itisfine.gif'
 
 <CodeSurfer>
 
-```git
+```git title="Pitfall #6: Histogram Cardinality Explosion"
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -2994,7 +3008,7 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 <Notes>
 	KEMAL
 
-	With histograms cardinality multiplies very quickly!
+	With histograms, cardinality multiplies very quickly!
 
 	Be very considered with your histograms.
 
@@ -3007,10 +3021,7 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 
 ---
 
-
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #7: Poorly Chosen Histogram Buckets</h2>
-
----
 
 <Notes>
 
@@ -3027,6 +3038,14 @@ Hence they have significantly less storage requirements compare to storing raw d
 As a result performance of your histogram tightly depends on your bucket layout.
 
 Lets see some example bucket layouts and how to fix them.
+
+</Notes>
+
+---
+
+<Notes>
+
+KEMAL
 
 1)
 
@@ -3401,21 +3420,24 @@ import increased_metric from './static/initialize_metrics_graph_3.png'
 ### Summary
 
 <Notes>
-	1)
-	Observe your applications, monitoring is not optional.
-	You have to know what's going on with your application on production.
-	Determin your service level objectives.
-	Build alerts on them.
-	Build dashboards on them.
 
-	2)
-	Now, since you have also alerts and dashboads in place. You rely on them.
-	Test them as you test your business logic.
+1)
+Observe your applications, monitoring is not optional.
+You have to know what's going on with your application on production.
+Determin your service level objectives.
+Build alerts on them.
+Build dashboards on them.
 
-	3)
-	"magic is bad; global state is magic" by Peter Bourgon
+2)
+Now, since you have also alerts and dashboads in place. You rely on them.
+Test them as you test your business logic.
 
-	So avoid global state, make your life easy for yourself.
+3)
+Last but not the least,
+
+So avoid global state, make your life easy for yourself.
+
+"magic is bad; global state is magic" by Peter Bourgon
 
 </Notes>
 
