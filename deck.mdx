@@ -1144,38 +1144,104 @@ Does our code satisfy RED method?
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Not conforming naming convention</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Naming: Not conforming naming convention</h2>
+
+---
+
+<h3 style="text-align: center; margin: 0 10px 0 10px;"> There is an official documentation on naming conventions</h3>
 
 <br/>
 <br/>
-<ul>
-<div style="font-size: 80%;">
-<Appear>
-<li><a href="https://prometheus.io/docs/practices/naming/#metric-and-label-naming">https://prometheus.io/docs/practices/naming/#metric-and-label-naming</a></li>
-<li>
-Name should have a suffix describing the unit, in plural form. Note that an accumulating count has *_total* as a suffix, in addition to the unit if applicable
-Examples: <br/>
-<div style="font-style: italic;">
-<ul>
-<li>http_request_duration_<b>seconds</b></li>
-<li>node_memory_usage_<b>bytes</b></li>
-<li>http_requests_<b>total</b></li>
-<li>process_cpu_<b>seconds_total</b></li>
-<li>build_<b>info</b></li>
-</ul>
-</div></li>
-</Appear>
-</div>
-</ul>
+
+<h6 style="text-align: center;"><a>https://prometheus.io/docs/practices/naming/#metric-and-label-naming</a></h6>
+
 <Notes>
 
-There is official Prometheus metric and label name convention!
+KEMAL
 
-1. Something to rememeber
+There is official Prometheus metric and label name convention!
+Check it out, it's really helpful.
 
 </Notes>
 
 ---
+
+<Notes>
+
+KEMAL
+
+A couple of bullet points to highlight.
+
+1)
+Name should have a suffix describing the unit, in plural form.
+
+2)
+An accumulating counter has *_total* as a suffix, in addition to the unit if applicable.
+With new OpenMetrics standards this will become mandatory.
+
+3)
+Put _info suffix at the end for a pseudo-metric that provides metadata about the running binary.
+
+</Notes>
+
+<CodeSurfer>
+
+```git title="Pitfall #4: Naming: Not conforming naming convention"
+```
+
+```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="Name should have a suffix describing the unit"
+
+http_request_duration_seconds
+node_memory_usage_bytes
+
+```
+
+```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="A counter has *_total* as a suffix"
+
+http_request_duration_seconds
+node_memory_usage_bytes
+
+http_requests_total
+process_cpu_seconds_total
+
+```
+
+```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="_info suffix for info metrics"
+
+http_request_duration_seconds
+node_memory_usage_bytes
+
+http_requests_total
+process_cpu_seconds_total
+
+build_info
+
+```
+
+</CodeSurfer>
+
+---
+
+<Notes>
+
+KEMAL
+
+There is important aspect of naming as well: its stability.
+
+1)
+Let's say we have a metric that aggregates total number of http requests that we handle which also records status codes.
+
+2)
+Let's build an alert using it.
+
+3)
+At something, for whaetever reason you decide to change your metric and you add _protocol_ in the name.
+
+4)
+This alert will never fire but also will not fail!
+Rename can cause issues like this in Alerts, Recording rules, Dashboards and more..
+
+</Notes>
 
 <CodeSurfer>
 
@@ -1290,7 +1356,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-## BOOM! This alert will never fire but also will not fail!
+## BOOM!💥 This alert will never fire but also will not fail!
 ## Rename can cause issues like this in Alerts, Recording rules, Dashboards and more..
 alert: HttpToMany502Errors
   expr: |
@@ -1309,15 +1375,12 @@ alert: HttpToMany502Errors
 
 </CodeSurfer>
 
-<Notes>
-
-There is important aspect of naming as well: its stability.
-
-</Notes>
-
 ---
+import harry_potter from './static/harry_potter.gif'
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Unbounded Cardinality</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Cardinality: Unbounded metrics</h2>
+
+<img src={harry_potter} style="height: 50%; width: 80%; margin-top: 5%"/>
 
 <Notes>
 
@@ -1340,9 +1403,35 @@ Let's see an example.
 
 ---
 
+<Notes>
+
+KEMAL
+
+Everything looks good, let's run our loadbalancer and get our metrics.
+
+1)
+Let's define a metric called `conntrackdialer_conn_failed_total`, to track the number of failed connections we have in our loadbalancer.
+And let's have a label called `reason` to track failure reasons.
+
+2)
+Let's use our metric in action and increment our metric with corresponding error.
+
+3)
+Let's check out our metrics...
+
+That is not what we expected.
+What went wrong?
+
+We shoudn't use arbitrary data as label values.
+Always keep track of things that you put in your labels.
+
+So let's see how we can fix it.
+
+</Notes>
+
 <CodeSurfer>
 
-```go title="Unbounded Cardinality" subtitle="Define a metric" 7:14
+```go title="Cardinality: Unbounded metrics" subtitle="Define a metric" 7:14
 
 type DialerMetrics struct {
 	connFailedTotal *prometheus.CounterVec
@@ -1417,21 +1506,25 @@ conntrack_dialer_conn_failed_total{reason="Invalid value for argument: client: n
 
 </CodeSurfer>
 
+---
+
 <Notes>
 
 KEMAL
 
-Let's define a metric called `conntrackdialer_conn_failed_total`, to track the number of failed connections we have in our loadbalancer.
+1)
+Here we are at the beginning again, so how can we improve this?
 
-And let's have a label called `reason` to track failure reasons.
+2)
+One of the tactics that I use is to define labels as constants.
 
-And then open our connection and whatever needs to be done and if we fail, let's increment our metric with corresponding error.
+3)
+And then create a helper function to map arbitrary errors to constant labels.
 
-Everything looks good, let's run our loadbalancer and get our metrics.
+Same principle is valid for the paths, user ids, session ids.
+Anything you can think of as arbitrary.
 
 </Notes>
-
----
 
 <CodeSurfer>
 
@@ -1548,7 +1641,7 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
-```go subtitle="Never use arbitrary data as label values"
+```go subtitle="Map errors to label values"
 
 const (
 	failedResolution  = "resolution"
@@ -1677,23 +1770,6 @@ func dialErrToReason(err error) string {
 ```
 
 </CodeSurfer>
-
-<Notes>
-
-KEMAL
-
-That is not what we expacted.
-What went wrong?
-
-We shoudn't use arbitrary data as label values.
-
-We should always keep them in bounds.
-
-A better approach would be to predefine them.
-
-So let's see how we can fix it.
-
-</Notes>
 
 ---
 
@@ -1836,6 +1912,10 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 <Notes>
 	TODO: Kemal
 
+	TODO: Add the equation?
+
+	Things multiply very quickly!
+
 	Bucket layouts
 </Notes>
 
@@ -1946,27 +2026,37 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 
 KEMAL
 
-TODO: Kemal
+TODO: Clean up
 
-	Histograms and summaries are more complex metric types. Not only does a single histogram or summary create a multitude of time series, it is also more difficult to use these metric types correctly. This section helps you to pick and configure the appropriate metric type for your use case.
-	Histograms and summaries both sample observations, typically request durations or response sizes. They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
+	Histograms and summaries are more complex metric types. Not only does a single histogram or summary create a multitude of time series, it is also more difficult to use these metric types correctly.
+	This section helps you to pick and configure the appropriate metric type for your use case.
+
+	Histograms and summaries both sample observations, typically request durations or response sizes.
+	They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
 
 Show metrics with yolo many buckets
 TODO: Problem: Cardinality (explain why)
-TODO: Solution: SLO based!
-TODO: Define histograms!
-TODO: Why do we need buckets?
 
+
+TODO: Define histograms!
 Histograms are more complex metric types compare to metrics and gauges.
 However underneath they are just a couple of counters with labels.
 
 They do sampled observations, typically on request durations or response sizes.
 They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
 
+TODO: Why do we need buckets?
 They accummulate theur observation in to buckets. You have to define those buckets when you create them.
 As a result performance of your histogram tightly depends on your bucket layout and coming up with a correct layout is more art then science :)
 
+TODO: Solution: SLO based! How to choose buckets?
+
 Lets see some bad bucket layouts and how to fix them.
+
+TODO: Flow
+1) Match with subtitles
+2)
+3)
 
 </Notes>
 
@@ -2140,6 +2230,8 @@ Another common pitfall is not to initialize your metrics with labels.
 
 Let's have a look at an example.
 
+TODO: Add flow
+
 </Notes>
 
 ---
@@ -2202,6 +2294,8 @@ KEMAL
 As you can see, although we have our increment metric.
 
 We do not see the actual change with our `increase` function.
+
+TODO: clarify
 
 </Notes>
 
@@ -2373,6 +2467,7 @@ This is exactly what we want.
 Now we can be sure that this counter could be used in alerts.
 
 TODO: More clarification.
+TODO: Add screenshots with graphs?
 
 </Notes>
 
@@ -2380,15 +2475,21 @@ TODO: More clarification.
 
 # Summary
 
+<Notes>
+	TODO: Solution: SLO based!
+
+	1)
+
+	2)
+
+	3)
+</Notes>
+
 <Appear>
 	<h2>Monitoring is essential.</h2>
 	<h2>Avoid Global Registry.</h2>
 	<h2>Unit Test Your Instrumentation.</h2>
 </Appear>
-
-<Notes>
-	TODO: Kemal
-</Notes>
 
 ---
 
@@ -2414,7 +2515,13 @@ If you want to learn more, try it yourself or dig deeper in the code, here is a 
 
 <Notes>
 
-And you can alos find the slides in that links.
+So that's it.
+Thank you very much for listening.
+
+TODO: How to end? Check examples?
+
+And you can also find the slides in that links.
+
 
 </Notes>
 
@@ -2424,10 +2531,11 @@ And you can alos find the slides in that links.
 
 * [Thanos](https://thanos.io)
 * [Prometheus](https://prometheus.io)
-* [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus/testutil)
+* [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus)
 * [Prometheus - Histogram](https://prometheus.io/docs/practices/histograms/)
 * [Prometheus Histograms – Past, Present, and Future](https://www.youtube.com/watch?v=7sQFkaMCyEI)
-* [Roboust Perception - Cardinality is the key](https://www.robustperception.io/cardinality-is-key)
-* [Gopherize me](https://gopherize.me/)
+* [Roboust Perception Blog](https://www.robustperception.io/blog)
 * [Why globals are magic](https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html)
 * [Red Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services)
+* [Promcon 2019 - OpenMatrics](https://youtu.be/orV4hrk0fJM)
+* [Gopherize me](https://gopherize.me/)
