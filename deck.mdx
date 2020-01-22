@@ -10,8 +10,6 @@ import thanos from './static/thanos_logo.svg'
 import prometheus from './static/prometheus_logo.svg'
 import redhat from './static/red_hat_logo.png'
 
-import ss_repo from './static/ss_repo.png'
-
 export const themes = [
 	shadesOfPurple,
 	theme,
@@ -1388,13 +1386,14 @@ KEMAL
 
 When we talk about Prometheus it always comes down to cardinality.
 
-What is cardinality actually? So the cardinality, in Prometheus context, is the amount of unique time-series you have in youir system.
+What is cardinality actually? So the cardinality, in Prometheus context, is the amount of unique time-series you have in your system.
 
-And don't forget each label value that you add to your metric creates another time=series.
+And don't forget each label value that you add to your metric creates another time-series.
 
 So for example, if you have a label containing HTTP methods would have a cardinality of 2 if you had only GET and POST in your application.
 
 Labels what make Prometheus stong. However you should always watch out how you use them.
+
 Things could get out of control pretty quickly.
 
 Let's see an example.
@@ -1773,13 +1772,60 @@ func dialErrToReason(err error) string {
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #6: Histogram Cardinality Explosion</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #6: Cardinality: Histogram Explosion</h2>
 
 ---
+
+<Notes>
+
+KEMAL
+
+Histograms are more complex metric types compare to metrics and gauges.
+
+Not only underneath, a single histogram includes a couple of counters with labels, it is also more difficult to use it correctly.
+
+They do sampled observations, typically on request durations or response sizes.
+
+They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
+
+What's the problem with cardinality?
+
+As I told underneath by default they have a couple of labeled counters.
+
+By default they expose, 12-14 counters.
+
+So anything you add, builds up.
+
+Let's see an example.
+
+1)
+Again let's start with defining our good old http request duration metric with a default set of labels.
+
+2)
+Let's get our metrics.
+They look good.
+Let's say we run our loadbalancer for a while and we realize that requests take longer than we anticipated.
+
+3)
+So let's add some more metrics.
+It's fine just a couple of more time series per histogram.
+
+4)
+Let's get our metrics again.
+Same sceneraio, we need more buckets let's add some more.
+
+5)
+we are good for now, let's leave it be.
+
+</Notes>
 
 <CodeSurfer>
 
 ```go title="Histogram Cardinality Explosion"
+
+var (
+	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3}
+)
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -1792,7 +1838,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
 				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3},
+				Buckets: buckets,
 			},
 			[]string{"code", "method"},
 		),
@@ -1805,6 +1851,10 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```go title="Histogram Cardinality Explosion"
 
+var (
+	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120}
+)
+
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
 }
@@ -1816,7 +1866,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
 				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120},
+				Buckets: buckets,
 			},
 			[]string{"code", "method"},
 		),
@@ -1851,7 +1901,11 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```go title="Histogram Cardinality Explosion" 13
+```go title="Histogram Cardinality Explosion" 3
+
+var (
+	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 40, 50, 60, 90, 120, 150, 200}
+)
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -1864,7 +1918,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
 				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 40, 50, 60, 90, 120, 150, 200},
+				Buckets: buckets,
 			},
 			[]string{"code", "method"},
 		),
@@ -1907,17 +1961,9 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ---
 
-# 💥
+import itisfine from './static/itisfine.gif'
 
-<Notes>
-	TODO: Kemal
-
-	TODO: Add the equation?
-
-	Things multiply very quickly!
-
-	Bucket layouts
-</Notes>
+<img src={itisfine} style="height: 60%; margin-top: 5%"/>
 
 ---
 
@@ -2016,7 +2062,22 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 
 </CodeSurfer>
 
+<Notes>
+	KEMAL
+
+	With histograms cardinality multiplies very quickly!
+
+	Be very considered with your histograms.
+
+	Choose what you put in those labels wisely.
+
+	And do not just choose your histogram buckets randomly.
+
+	Which is actually my next point.
+</Notes>
+
 ---
+
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #7: Poorly Chosen Histogram Buckets</h2>
 
@@ -2026,43 +2087,47 @@ http_request_duration_seconds_count{code="200",handler="demo-refused-conn-someti
 
 KEMAL
 
-TODO: Clean up
+Histograms are actually great to collect observations from your system.
 
-	Histograms and summaries are more complex metric types. Not only does a single histogram or summary create a multitude of time series, it is also more difficult to use these metric types correctly.
-	This section helps you to pick and configure the appropriate metric type for your use case.
+Histograms can be used to produce arbitrary quantile estimations. You can even estimate the mean.
 
-	Histograms and summaries both sample observations, typically request durations or response sizes.
-	They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
+They accummulate theur observation in to buckets.
 
-Show metrics with yolo many buckets
-TODO: Problem: Cardinality (explain why)
+Hence they have significantly less storage requirements compare to storing raw data.
 
+As a result performance of your histogram tightly depends on your bucket layout.
 
-TODO: Define histograms!
-Histograms are more complex metric types compare to metrics and gauges.
-However underneath they are just a couple of counters with labels.
+Lets see some example bucket layouts and how to fix them.
 
-They do sampled observations, typically on request durations or response sizes.
-They track the number of observations and the sum of the observed values, allowing you to calculate the average of the observed values.
+1)
 
-TODO: Why do we need buckets?
-They accummulate theur observation in to buckets. You have to define those buckets when you create them.
-As a result performance of your histogram tightly depends on your bucket layout and coming up with a correct layout is more art then science :)
+So what's wrong here.
 
-TODO: Solution: SLO based! How to choose buckets?
+Prometheus implements histograms as cumulative histograms.
+This means the first bucket is a counter of observations less than or equal to 0.5, the second bucket is a counter of observations less than or equal to 1, etc.
+Each bucket contains the counts of all prior buckets.
 
-Lets see some bad bucket layouts and how to fix them.
-
-TODO: Flow
-1) Match with subtitles
 2)
-3)
+Let's fix it.
+
+So coming up for a good bucket layout is hard.
+
+Knowing Your Distribution.
+
+Accuracy is controlled by the granularity of your bucket layout.
+And adding more bucket increases cardinality by magnitudes.
+
+My suggestion define your service level objectives and create your buckets accordingly.
 
 </Notes>
 
 <CodeSurfer>
 
 ```go title="Poorly chosen Histogram buckets"
+
+var (
+	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3}
+)
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -2075,7 +2140,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
 				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3},
+				Buckets: buckets,
 			},
 			[]string{"code", "method"},
 		),
@@ -2086,7 +2151,11 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```go title="Poorly chosen Histogram buckets" 13
+```go title="Poorly chosen Histogram buckets" 3
+
+var (
+	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3}
+)
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -2099,7 +2168,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
 				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3},
+				Buckets: buckets,
 			},
 			[]string{"code", "method"},
 		),
@@ -2127,7 +2196,11 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```go title="Poorly chosen Histogram buckets" 13
+```go title="Poorly chosen Histogram buckets" subtitle="client_go is your friend!" 3
+
+var (
+	buckets = prometheus.LinearBuckets(0.001, 0.0002, 6)
+)
 
 type ServerMetrics struct {
 	requestDuration  *prometheus.HistogramVec
@@ -2140,48 +2213,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 			prometheus.HistogramOpts{
 				Name:    "http_request_duration_seconds",
 				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: []float64{0.0000001, 0.000001, 0.00001, 0.00003, 0.00006, 0.001, 0.03},
-			},
-			[]string{"code", "method"},
-		),
-	}
-	reg.MustRegister(ins.requestDuration)
-	return ins
-}
-
-```
-
-```git
-
-# HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
-# TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1e-07"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1e-06"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1e-05"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="3e-05"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="6e-05"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.001"} 1
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.03"} 23
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 23
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.0636401
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 23
-
-```
-
-```go title="Poorly chosen Histogram buckets" 13
-
-type ServerMetrics struct {
-	requestDuration  *prometheus.HistogramVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	ins := &ServerMetrics{
-		requestDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "http_request_duration_seconds",
-				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: prometheus.LinearBuckets(0.001, 0.0002, 6),
+				Buckets: buckets,
 			},
 			[]string{"code", "method"},
 		),
@@ -2208,14 +2240,6 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```go title="Poorly chosen Histogram buckets"
-
-DefaultBuckets = []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
-prometheus.ExponentialBuckets(.1, 1.5, 5),
-prometheus.LinearBuckets(.01, .01, 10)
-
-```
-
 </CodeSurfer>
 
 ---
@@ -2228,9 +2252,9 @@ KEMAL
 
 Another common pitfall is not to initialize your metrics with labels.
 
-Let's have a look at an example.
+What do we mean by that?
 
-TODO: Add flow
+Let's have a look at an example.
 
 </Notes>
 
@@ -2274,7 +2298,7 @@ m.connFailedTotal.WithLabelValues("unknown").Add(30)
 As always let's start with defining a metric.
 
 1)
-An for this example as well let's use the same metric that we got familiar with `conntrack_dialer_conn_failed_total`.
+An for this example as well let's use `conntrack_dialer_conn_failed_total`.
 
 2)
 Let's set a value with a specfic reason for this counter.
@@ -2283,33 +2307,41 @@ Let's set a value with a specfic reason for this counter.
 
 ---
 
-import uninitialized_metrics from './static/uninitialized_metrics.png'
+import normal_increment from './static/initialize_metrics_graph_1.png'
 
-<Image src={uninitialized_metrics} size='contain'/>
+<Image src={normal_increment} size='contain'/>
 
 <Notes>
 
 KEMAL
 
-As you can see, although we have our increment metric.
+As you can see, we have our incremented metric.
 
-We do not see the actual change with our `increase` function.
-
-TODO: clarify
+Everything looks good. However...
 
 </Notes>
 
 ---
 
-import uninitialized_metrics_marked from './static/uninitialized_metrics_marked.png'
+import no_increase from './static/initialize_metrics_graph_2.png'
 
-<Image src={uninitialized_metrics_marked} size='contain'/>
+<Image src={no_increase} size='contain'/>
 
 <Notes>
 
 KEMAL
 
-This is not something we want.
+We do not see the increment!
+
+When there's an increment on a subsequent scrape Prometheus won't be able to see that the value has increased over time,
+
+if you don't initialise metrics to zero when your application starts.
+
+In other words, if the counter just appears with the value 30 and then incremented in the same instant,
+
+Prometheus can't distinguish between that being a brand new counter that was just incremented, or a counter that was incremented.
+
+So always initialize your metrics with labels.
 
 </Notes>
 
@@ -2360,12 +2392,9 @@ func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
 
 ```
 
-```go title="Not initializing Metrics"
+```go title="Not initializing Metrics" subtitle="Let's define our reasons"
 
 const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
 	failedUnknown     = "unknown"
 )
 
@@ -2392,12 +2421,9 @@ func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
 
 ```
 
-```go title="Not initializing Metrics"
+```go title="Not initializing Metrics" subtitle="And initialize it"
 
 const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
 	failedUnknown     = "unknown"
 )
 
@@ -2422,9 +2448,6 @@ func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
 	// Initialize metric with labels.
 	// It is possible to call this method without using the returned Counter to only
 	// create the new Counter but leave it at its starting value 0.
-	m.connFailedTotal.WithLabelValues(failedResolution)
-	m.connFailedTotal.WithLabelValues(failedConnRefused)
-	m.connFailedTotal.WithLabelValues(failedTimeout)
 	m.connFailedTotal.WithLabelValues(failedUnknown)
 
 	return m
@@ -2440,58 +2463,42 @@ m.connFailedTotal.WithLabelValues("unknown").Add(30)
 
 ---
 
-import initialized_metrics from './static/initialized_metrics.png'
+import increased_metric from './static/initialize_metrics_graph_3.png'
 
-<Image src={initialized_metrics} size='contain'/>
-
-<Notes>
-
-KEMAL
-
-Now we see actual increment value.
-
-</Notes>
+<Image src={increased_metric} size='contain'/>
 
 ---
 
-import initialized_metrics_marked from './static/initialized_metrics_marked.png'
-
-<Image src={initialized_metrics_marked} size='contain'/>
+### Summary
 
 <Notes>
-
-KEMAL
-
-This is exactly what we want.
-
-Now we can be sure that this counter could be used in alerts.
-
-TODO: More clarification.
-TODO: Add screenshots with graphs?
-
-</Notes>
-
----
-
-# Summary
-
-<Notes>
-	TODO: Solution: SLO based!
-
 	1)
+	Observe your applications, monitoring is not optional.
+	You have to know what's going on with your application on production.
+	Determin your service level objectives.
+	Build alerts on them.
+	Build dashboards on them.
 
 	2)
+	Now, since you have also alerts and dashboads in place. You rely on them.
+	Test them as you test your business logic.
 
 	3)
+	"magic is bad; global state is magic" by Peter Bourgon
+
+	So avoid global state, make your life easy for yourself.
+
 </Notes>
 
 <Appear>
 	<h2>Monitoring is essential.</h2>
-	<h2>Avoid Global Registry.</h2>
 	<h2>Unit Test Your Instrumentation.</h2>
+	<h2>Avoid Global Registry.</h2>
 </Appear>
 
 ---
+
+import ss_repo from './static/ss_repo.png'
 
 ### [https://github.com/observatorium/observable-demo](https://github.com/observatorium/observable-demo)
 
@@ -2515,13 +2522,10 @@ If you want to learn more, try it yourself or dig deeper in the code, here is a 
 
 <Notes>
 
-So that's it.
+So that's from us.
 Thank you very much for listening.
 
-TODO: How to end? Check examples?
-
 And you can also find the slides in that links.
-
 
 </Notes>
 
