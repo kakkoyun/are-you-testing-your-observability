@@ -21,19 +21,11 @@ export const themes = [
 
 <CodeSurfer>
 
-```go 6[17:53],7[17:53],11[17:53]
-package main
-
-import "fmt"
-
-func main() {
-	fmt.Println("Are you testing your Observability?")
-	fmt.Println("      --- Metrics Edition ---      ")
-
-
-
-	fmt.Println("    FOSDEM, 02.02.2020, Brussel    ")
-}
+```go 1[27:61],2[27:61],3[29:36],4[24:30]
+	talks_total{title="   Are you testing your Observability?   "} 1
+	talks_total{subtitle="      --- Metrics Edition ---      "} 1
+	talks_total{conference="FOSDEM"} 1
+	talks_total{where="Brussel"} 1
 ```
 
 </CodeSurfer>
@@ -42,16 +34,13 @@ func main() {
 
 Hello everyone!
 
-We are extremely excited to be here in GoDays conference, and be able to speak about two topic we both love:
-
-* Observability
-* Programming in go
+We are extremely excited to be here in FOSDEM conference, and be able to speak about the topic we love Observability.
 
 We hope our talk will be very inspiring and actionable for you.
 This is because at the end of this talk we would like you to know 3 THINGS:
 
-* Why instrumenting backend Go applications with actionable metrics is essential
-* How to add metrics quickly in Go, how to test them
+* Why instrumenting backend applications with actionable metrics is essential
+* How to instrument your service quickly for Prometheus metric system to use
 * And last but not the least: What are the common mistakes you should avoid, mistakes that
 we seen a lot during our work with Go and metrics in the amazing (but sometimes WILD) OPEN SOURCE WORLD.
 
@@ -61,13 +50,13 @@ But before that: Short introduction!
 
 ---
 
-import bartek from './static/gopher_bartek.png'
-import kemal from './static/gopher_kemal.png'
+import bartek from './static/bartek.jpeg'
+import kemal from './static/kemal.jpeg'
 import twitter from './static/twitter.png'
 import github from './static/github.png'
 
 <div style="width: 100%; height: 50%; overflow: auto;">
-<img src={bartek} style="height: 90%; float: left;"/>
+<img src={bartek} style="height: 90%; float: left; margin-top: 20px; padding: 0 20px 0 20px"/>
 
 #### Bartek Plotka
 
@@ -81,7 +70,7 @@ Prometheus and Thanos Maintainer<br/><br/>
 </div>
 
 <div style="width: 100%; height: 50%; overflow: auto;">
-<img src={kemal} style="height: 90%; float: left;"/>
+<img src={kemal} style="height: 90%; float: left; margin-top: 20px; padding: 0 20px 0 20px"/>
 
 #### Kemal Akkoyun
 
@@ -123,15 +112,15 @@ I'm also into everything related to Go, Prometheus and Kubernetes, so I love wor
 Our job is focused on building scalable Observability solutions and platforms for OpenShift.
 But also as one of the major part of our work is maintaining Prometheus and Thanos projects on a daily basis.
 Those projects are focused on enabling monitoring via metrics for infrastructure, server side applications e.g
-in microservices running on Kubernetes.
-
-But let's leave that for now!
+in microservices running on Kubernetes. While we work on enabling metrics from backend side, we also
+are part of the client side of metrics, so applications that are being monitored. And this is the part we will be focusing
+on today.
 
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Let's implement an HTTP L7 loadbalancer in Go! ❤</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Let's implement an HTTP L7 loadbalancer! ❤</h2>
 
 ---
 
@@ -145,15 +134,10 @@ import d01 from './static/d01.png'
 
 <Notes>
 
-Today we have fun task! We will talk today about building loadbalancer. Kind of.
+Today we have a fun task! We will talk today about building loadbalancer. Kind of.
 
-For demo purposes let's imagine we want to implement application level HTTP loadbalancer in Go?
-
-Why? Well I could explain what role loadbalancer has these days, that it can distribute load evenly across many replicas
-of the same microservice. I could mention that request based load balancing, in Layer 7, so application layer is beneficial because you has more
-control, better insight, auditing capabilities, graceful shutdowns etc.
-
-But let's instead implement loadbalancer because why not! FOR FUN.
+For demo purposes let's imagine we want to implement application level HTTP loadbalancer. Let's say in Go, but
+programming language does not matter here.
 
 1) So let's say we implemented transparent loadbalancer as presented in this diagram.
 From high level design we have couple of Go components.
@@ -207,21 +191,6 @@ We can't really tell!
 
 ---
 
-import d04 from './static/d04.png'
-
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
-
-<Image src={d04} size='contain'/>
-
-<Notes>
-
-And what about discovery logic. Is DNS working? How many replicas it discovers?
-How many it was discovering yesterday at 5pm?
-
-</Notes>
-
----
-
 import d05 from './static/d05.png'
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
@@ -247,20 +216,6 @@ import d06 from './static/d06.png'
 
 What if users reports that the endpoint is slow: is it the backend that is slow?
 Or is loadbalancing logic that is introducing the latency?
-
-</Notes>
-
----
-
-import d07 from './static/d07.png'
-
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Wait... Anything missing?</h2>
-
-<Image src={d07} size='contain'/>
-
-<Notes>
-
-What about resource consumption of the loadbalancer? Maybe we have a memory leak?
 
 </Notes>
 
@@ -341,7 +296,7 @@ import d11 from './static/d11.png'
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our LB with Prometheus metrics!</h2>
 
-<Image src={d11} size='contain'/>
+<Image src={d03} size='contain'/>
 
 <Notes>
 
@@ -357,7 +312,7 @@ import d12 from './static/d12.png'
 
 <h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our LB with Prometheus metrics!</h2>
 
-<Image src={d12} size='contain'/>
+<Image src={d11} size='contain'/>
 
 <Notes>
 
@@ -366,6 +321,7 @@ reporting method that was used, and HTTP status code that was returned.
 
 We can introduce this metric really in few simple steps.
 
+TODO
 </Notes>
 
 ---
@@ -599,6 +555,7 @@ import pitfalls from './static/pitfall.gif'
 <img src={pitfalls} style="height: 50%; margin-top: 5%"/>
 
 <Notes>
+
 So it looked easy right? And it is easy in most cases. However during this talk we would like
 to present what we learnt during couple of years of developing and reviewing instrumentation Go code that
 is meant to be run on production, in close but mainly in open source.
@@ -1105,7 +1062,7 @@ With metrics in my opinion it's totally different story. They has to be tested. 
 
 <CodeSurfer>
 
-```go title="Pitfall #2: No testing" subtitle="Let's take our http requests metric."
+```go title="Pitfall #2: Not testing" subtitle="Let's take our http requests metric."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1127,7 +1084,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```go title="Pitfall #2: No testing" subtitle="Let's consider example impl of LB in ReverseProxy"
+```go title="Pitfall #2: Not testing" subtitle="Let's consider example impl of LB in ReverseProxy"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1171,7 +1128,7 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ```
 
-```go title="Pitfall #2: No testing" subtitle="Let's MAKE a bug in recording status!"
+```go title="Pitfall #2: Not testing" subtitle="Let's MAKE a bug in recording status!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1215,7 +1172,7 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ```
 
-```go title="Pitfall #2: No testing" subtitle="Let's see if our unit test will catch that!"
+```go title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1294,13 +1251,13 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```diff 52,53,54,55,56,57,58,59 title="Pitfall #2: No testing" subtitle="Let's see if our unit test will catch that!"
+```diff 52,53,54,55,56,57,58,59 title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 ```
 
-```diff 62,63,64,65,66,67,68,69,70 title="Pitfall #2: No testing" subtitle="Let's see if our unit test will catch that!"
+```diff 62,63,64,65,66,67,68,69,70 title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 ```
 
-```go 35,36,39,58,59,60,61,62,63,64,65,66,67,68,69,70,71 title="Pitfall #2: No testing" subtitle="Nope as we don't assert any metric value."
+```go 35,36,39,58,59,60,61,62,63,64,65,66,67,68,69,70,71 title="Pitfall #2: Not testing" subtitle="Nope as we don't assert any metric value."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1392,7 +1349,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="Prometheus library allows asserting on values!"
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Prometheus library allows asserting on values!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1488,7 +1445,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="Let's create metrics instance and initial assertion."
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's create metrics instance and initial assertion."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1590,7 +1547,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="Let's add expectations for each case about metric values."
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's add expectations for each case about metric values."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1696,7 +1653,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="And assert on them."
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="And assert on them."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1810,7 +1767,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go 99,100,101,102,103,104,105,106,107,108 title="Pitfall #2: No testing: Let's add tests!" subtitle="Now, test will catch our bug!"
+```go 99,100,101,102,103,104,105,106,107,108 title="Pitfall #2: Not testing - Let's add tests!" subtitle="Now, test will catch our bug!"
 
 
 type ServerMetrics struct {
@@ -1973,7 +1930,7 @@ We really recommend to extend your normal tests with metrics assertion for all y
 <br/>
 <Appear>
 
-<h5 style="text-align: center; margin: 0 10px 0 10px;">The Four Golden Signals, USE method, RED method etc...</h5>
+<h4 style="text-align: center; margin: 0 10px 0 10px;">The Four Golden Signals, USE method, RED method etc...</h4>
 
 <div>
 <br/>
@@ -2146,17 +2103,17 @@ Put _info suffix at the end for a pseudo-metric that provides metadata about the
 
 <CodeSurfer>
 
-```git title="Pitfall #4: Naming - Not conforming naming convention"
+```go title="Pitfall #4: Naming - Not conforming naming convention"
 ```
 
-```git title="Pitfall #4: Naming - Not conforming naming convention" subtitle="Names should have a suffix describing the unit"
+```go title="Pitfall #4: Naming - Not conforming naming convention" subtitle="Names should have a suffix describing the unit."
 
 http_request_duration_seconds
 node_memory_usage_bytes
 
 ```
 
-```git title="Pitfall #4: Naming - Not conforming naming convention" subtitle="Counter names have *_total* as a suffix"
+```go title="Pitfall #4: Naming - Not conforming naming convention" subtitle="Counter names have *_total* as a suffix."
 
 http_request_duration_seconds
 node_memory_usage_bytes
@@ -2166,7 +2123,7 @@ process_cpu_seconds_total
 
 ```
 
-```git title="Pitfall #4: Naming - Not conforming naming convention" subtitle="_info suffix for metadata metric names"
+```go title="Pitfall #4: Naming - Not conforming naming convention" subtitle="_info suffix for metadata metric names."
 
 http_request_duration_seconds
 node_memory_usage_bytes
@@ -2296,7 +2253,7 @@ alert: HttpToMany502Errors
 
 ```
 
-```go title="Pitfall #4: Naming - Stability" subtitle="Ups..."
+```go title="Pitfall #4: Naming - Stability" subtitle="Ooops..."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -2392,7 +2349,7 @@ So let's see how we can fix it.
 
 <CodeSurfer>
 
-```go title="Pitfall #5: Cardinality - Unbounded labels" subtitle="Define a metric" 7:14
+```go title="Pitfall #5: Cardinality - Unbounded labels" subtitle="Let's define a metric." 7:14
 
 type DialerMetrics struct {
 	connFailedTotal *prometheus.CounterVec
@@ -2452,7 +2409,7 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
-```git subtitle="Let's check out our metrics... 😲"
+```go subtitle="Let's check out our metrics... 😲"
 # HELP conntrack_dialer_conn_failed_total Total number of connections failed to dial by the dialer.
 # TYPE conntrack_dialer_conn_failed_total counter
 conntrack_dialer_conn_failed_total{reason="<nil>"} 1
@@ -2522,7 +2479,7 @@ func dialClientConnTracker(...) (net.Conn, error) {
 
 ```
 
-```go subtitle="Never use arbitrary data as label values"
+```go subtitle="Never use arbitrary data as label values."
 
 const (
 	failedResolution  = "resolution"
@@ -2845,7 +2802,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```git title="Pitfall #6: Histogram Cardinality Explosion"
+```go title="Pitfall #6: Histogram Cardinality Explosion"
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -2897,7 +2854,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```git title="Pitfall #6: Histogram Cardinality Explosion"
+```go title="Pitfall #6: Histogram Cardinality Explosion"
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -2929,7 +2886,7 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ---
 
-import itisfine from './static/itisfine.png'
+import itisfine from './static/itisfine.jpg'
 
 <img src={itisfine} style="height: 75%; margin-top: 3%"/>
 
@@ -2937,7 +2894,7 @@ import itisfine from './static/itisfine.png'
 
 <CodeSurfer>
 
-```git title="Pitfall #6: Histogram Cardinality Explosion"
+```go title="Pitfall #6: Histogram Cardinality Explosion"
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -3152,7 +3109,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```git
+```go
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -3169,10 +3126,12 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ```
 
-```go title="Pitfall #7: Poorly chosen Histogram buckets" subtitle="client_go is your friend!" 3
+```go title="Pitfall #7: Poorly chosen Histogram buckets" subtitle="Know your distribution." 3:5
 
 var (
+	// prometheus client libraries are your friends!
 	buckets = prometheus.LinearBuckets(0.001, 0.0002, 6)
+	// buckets = prometheus.LinearBuckets(0.001, 2, 6)
 )
 
 type ServerMetrics struct {
@@ -3197,7 +3156,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```git
+```go
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -3288,21 +3247,18 @@ And you can also find the slides in that links.
 
 ---
 
-# Reference:
+# References:
 
-<div style="font-size: 70%">
+<div style="font-size: 90%">
 
-* [Thanos](https://thanos.io)
 * [Prometheus](https://prometheus.io)
 * [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus)
+* [Thanos](https://thanos.io)
+* [Why globals are magic](https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html)
+* [Red Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services)
 * [Prometheus - Histogram](https://prometheus.io/docs/practices/histograms/)
 * [Prometheus Histograms – Past, Present, and Future](https://www.youtube.com/watch?v=7sQFkaMCyEI)
 * [Roboust Perception Blog](https://www.robustperception.io/blog)
-* [Why globals are magic](https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html)
-* [Red Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services)
-* [Promcon 2019 - OpenMatrics](https://youtu.be/orV4hrk0fJM)
-* [Gopherize me](https://gopherize.me/)
-* [Gophers](https://github.com/ashleymcnamara/gophers)
 
 </div>
 
