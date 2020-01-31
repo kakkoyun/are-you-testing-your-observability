@@ -19,7 +19,8 @@ const Provider = props => {
           right: 0,
           bottom: 0,
           margin: 16,
-          fontSize: '20px'
+          fontSize: '20px',
+          opacity: 0.33,
         }}
       >
         <div>@bwplotka</div>
