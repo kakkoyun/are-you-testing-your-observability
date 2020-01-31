@@ -1108,7 +1108,7 @@ With metrics in my opinion it's totally different story. They has to be tested. 
 
 <CodeSurfer>
 
-```go title="Pitfall #2: No testing" subtitle="Let's take our http requests metric."
+```go title="Pitfall #2: Not testing" subtitle="Let's take our http requests metric."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1130,7 +1130,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```go title="Pitfall #2: No testing" subtitle="Let's consider example impl of LB in ReverseProxy"
+```go title="Pitfall #2: Not testing" subtitle="Let's consider example impl of LB in ReverseProxy"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1174,7 +1174,7 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ```
 
-```go title="Pitfall #2: No testing" subtitle="Let's MAKE a bug in recording status!"
+```go title="Pitfall #2: Not testing" subtitle="Let's MAKE a bug in recording status!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1218,7 +1218,7 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ```
 
-```go title="Pitfall #2: No testing" subtitle="Let's see if our unit test will catch that!"
+```go title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1297,13 +1297,13 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```diff 52,53,54,55,56,57,58,59 title="Pitfall #2: No testing" subtitle="Let's see if our unit test will catch that!"
+```diff 52,53,54,55,56,57,58,59 title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 ```
 
-```diff 62,63,64,65,66,67,68,69,70 title="Pitfall #2: No testing" subtitle="Let's see if our unit test will catch that!"
+```diff 62,63,64,65,66,67,68,69,70 title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 ```
 
-```go 35,36,39,58,59,60,61,62,63,64,65,66,67,68,69,70,71 title="Pitfall #2: No testing" subtitle="Nope as we don't assert any metric value."
+```go 35,36,39,58,59,60,61,62,63,64,65,66,67,68,69,70,71 title="Pitfall #2: Not testing" subtitle="Nope as we don't assert any metric value."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1395,7 +1395,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="Prometheus library allows asserting on values!"
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Prometheus library allows asserting on values!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1491,7 +1491,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="Let's create metrics instance and initial assertion."
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's create metrics instance and initial assertion."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1593,7 +1593,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="Let's add expectations for each case about metric values."
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's add expectations for each case about metric values."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1699,7 +1699,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: No testing: Let's add tests!" subtitle="And assert on them."
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="And assert on them."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1813,7 +1813,7 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go 99,100,101,102,103,104,105,106,107,108 title="Pitfall #2: No testing: Let's add tests!" subtitle="Now, test will catch our bug!"
+```go 99,100,101,102,103,104,105,106,107,108 title="Pitfall #2: Not testing - Let's add tests!" subtitle="Now, test will catch our bug!"
 
 
 type ServerMetrics struct {
