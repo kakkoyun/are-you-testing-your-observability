@@ -32,7 +32,7 @@ func main() {
 
 
 
-	fmt.Println("    GoDays 22.01.2020, Berlin      ")
+	fmt.Println("    FOSDEM, 02.02.2020, Brussel    ")
 }
 ```
 
@@ -733,14 +733,14 @@ func init() {
 	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
 }
 
-  // For endpoint /one:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -759,19 +759,19 @@ func init() {
 	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
 }
 
-  // For endpoint /one:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  # HELP http_requests_total Tracks the number of HTTP requests.
-  # TYPE http_requests_total counter
-  http_requests_total{code="200", method="get"} 2445
-  http_requests_total{code="500", method="get"} 53
+# HELP http_requests_total Tracks the number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{code="200", method="get"} 2445
+http_requests_total{code="500", method="get"} 53
 
 ```
 
@@ -790,14 +790,14 @@ func init() {
 	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
 }
 
-  // For endpoint /one:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -824,14 +824,14 @@ func init() {
 	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
 }
 
-  // For endpoint /one:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -854,20 +854,20 @@ func NewServerMetrics() *ServerMetrics {
 	return m
 }
 
-  metrics := NewServerMetrics()
+metrics := NewServerMetrics()
 
 func init() {
 	prometheus.DefaultRegisterer.MustRegister(metrics.requestsTotal)
 }
 
-  // For endpoint /one:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -891,17 +891,17 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-  reg := prometheus.NewRegistry()
-  metrics := NewServerMetrics(reg)
+reg := prometheus.NewRegistry()
+metrics := NewServerMetrics(reg)
 
-  // For endpoint /one:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -2033,7 +2033,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 ```diff 11,13 title="Pitfall #3: Lack of consistency" subtitle="R = Requests"
 ```
 
-```diff 13[25:30] title="Pitfall #3: Lack of consistency" subtitle="E = Errors (code =! 5..)"
+```diff 13[25:30] title="Pitfall #3: Lack of consistency" subtitle='E = Errors (code = "5..")'
 ```
 
 ```diff 10[1:2] title="Pitfall #3: Lack of consistency" subtitle="D = Duration is Missing!"
@@ -2100,7 +2100,7 @@ Now I will pass mic to Kemal.
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Naming: Not conforming naming convention</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Naming - Not conforming naming convention</h2>
 
 <Notes>
 
@@ -2136,7 +2136,7 @@ KEMAL
 A couple of bullet points to highlight.
 
 1)
-Name should have a suffix describing the unit, in plural form.
+Names should have a suffix describing the unit, in plural form.
 
 2)
 An accumulating counter has *_total* as a suffix, in addition to the unit if applicable.
@@ -2149,17 +2149,17 @@ Put _info suffix at the end for a pseudo-metric that provides metadata about the
 
 <CodeSurfer>
 
-```git title="Pitfall #4: Naming: Not conforming naming convention"
+```git title="Pitfall #4: Naming - Not conforming naming convention"
 ```
 
-```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="Name should have a suffix describing the unit"
+```git title="Pitfall #4: Naming - Not conforming naming convention" subtitle="Names should have a suffix describing the unit"
 
 http_request_duration_seconds
 node_memory_usage_bytes
 
 ```
 
-```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="A counter has *_total* as a suffix"
+```git title="Pitfall #4: Naming - Not conforming naming convention" subtitle="Counter names have *_total* as a suffix"
 
 http_request_duration_seconds
 node_memory_usage_bytes
@@ -2169,7 +2169,7 @@ process_cpu_seconds_total
 
 ```
 
-```git title="Pitfall #4: Naming: Not conforming naming convention" subtitle="_info suffix for metadata metrics"
+```git title="Pitfall #4: Naming - Not conforming naming convention" subtitle="_info suffix for metadata metric names"
 
 http_request_duration_seconds
 node_memory_usage_bytes
@@ -2208,7 +2208,7 @@ Rename can cause issues like this in Alerts, Recording rules, Dashboards and mor
 
 <CodeSurfer>
 
-```go title="Pitfall #4: Naming: stability"
+```go title="Pitfall #4: Naming - Stability"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -2229,7 +2229,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 }
 ```
 
-```go title="Pitfall #4: Naming: stability" subtitle="Let's say we alert on too many 5xx responses."
+```go title="Pitfall #4: Naming - Stability" subtitle="Let's say we alert on too many 5xx responses."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -2264,7 +2264,7 @@ alert: HttpToMany502Errors
 
 ```
 
-```go 11[29:37] title="Pitfall #4: Naming: stability" subtitle="Let's say we are renaming metric..."
+```go 11[29:37] title="Pitfall #4: Naming - Stability" subtitle="Let's say we are renaming metric..."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -2299,7 +2299,7 @@ alert: HttpToMany502Errors
 
 ```
 
-```go title="Pitfall #4: Naming: stability" subtitle="Ups..."
+```go title="Pitfall #4: Naming - Stability" subtitle="Ups..."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -2341,7 +2341,7 @@ alert: HttpToMany502Errors
 ---
 import harry_potter from './static/harry_potter.gif'
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Cardinality: Unbounded labels</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #5: Cardinality - Unbounded labels</h2>
 
 <img src={harry_potter} style="height: 50%; width: 80%; margin-top: 5%"/>
 
@@ -2395,7 +2395,7 @@ So let's see how we can fix it.
 
 <CodeSurfer>
 
-```go title="Pitfall #5: Cardinality: Unbounded labels" subtitle="Define a metric" 7:14
+```go title="Pitfall #5: Cardinality - Unbounded labels" subtitle="Define a metric" 7:14
 
 type DialerMetrics struct {
 	connFailedTotal *prometheus.CounterVec
@@ -2737,7 +2737,7 @@ func dialErrToReason(err error) string {
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #6: Cardinality: Histogram Explosion</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #6: Cardinality - Histogram Explosion</h2>
 
 <Notes>
 
@@ -3220,231 +3220,6 @@ http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #8: Not Initialized Metrics</h2>
-
-<Notes>
-
-KEMAL
-
-Another common pitfall is not to initialize your metrics with labels.
-
-What do we mean by that?
-
-Let's have a look at an example.
-
-</Notes>
-
----
-
-<CodeSurfer>
-
-```go title="Pitfall #8: Not initializing Metrics" subtitle="Define a metric"
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-```
-
-```go subtitle=""
-m.connFailedTotal.WithLabelValues("unknown").Add(30)
-```
-
-</CodeSurfer>
-
-<Notes>
-
-As always let's start with defining a metric.
-
-1)
-An for this example as well let's use `conntrack_dialer_conn_failed_total`.
-
-2)
-Let's set a value with a specfic reason for this counter.
-
-</Notes>
-
----
-
-import normal_increment from './static/initialize_metrics_graph_1.png'
-
-<Image src={normal_increment} size='contain'/>
-
-<Notes>
-
-KEMAL
-
-As you can see, we have our incremented metric.
-
-Everything looks good. However...
-
-</Notes>
-
----
-
-import no_increase from './static/initialize_metrics_graph_2.png'
-
-<Image src={no_increase} size='contain'/>
-
-<Notes>
-
-KEMAL
-
-We do not see the increment!
-
-When there's an increment on a subsequent scrape Prometheus won't be able to see that the value has increased over time,
-
-if you don't initialise metrics to zero when your application starts.
-
-In other words, if the counter just appears with the value 30 and then incremented in the same instant,
-
-Prometheus can't distinguish between that being a brand new counter that was just incremented, or a counter that was incremented.
-
-So always initialize your metrics with labels.
-
-</Notes>
-
----
-
-<Notes>
-
-KEMAL
-
-Let's fix this.
-
-1)
-We can start with predefining our labels as constants.
-This is not strictly necessary but it always helps me.
-
-2)
-And then let's use `WithLabelValues` method to initialize our counters.
-
-3)
-Let's run it again see what happens.
-
-</Notes>
-
-<CodeSurfer>
-
-```go title="Pitfall #8: Not initializing Metrics"
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-```
-
-```go title="Pitfall #8: Not initializing Metrics" subtitle="Let's define our reasons"
-
-const (
-	failedUnknown     = "unknown"
-)
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-```
-
-```go title="Pitfall #8: Not initializing Metrics" subtitle="And initialize it"
-
-const (
-	failedUnknown     = "unknown"
-)
-
-type DialerMetrics struct {
-	connFailedTotal      *prometheus.CounterVec
-}
-
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	// Initialize metric with labels.
-	// It is possible to call this method without using the returned Counter to only
-	// create the new Counter but leave it at its starting value 0.
-	m.connFailedTotal.WithLabelValues(failedUnknown)
-
-	return m
-}
-
-```
-
-```go title="Pitfall #8: Not initializing Metrics"
-m.connFailedTotal.WithLabelValues("unknown").Add(30)
-```
-
-</CodeSurfer>
-
----
-
-import increased_metric from './static/initialize_metrics_graph_3.png'
-
-<Image src={increased_metric} size='contain'/>
-
----
-
 ### Summary
 
 <Notes>
@@ -3495,7 +3270,9 @@ If you want to learn more, try it yourself or dig deeper in the code, here is a 
 
 # Thank you!
 
-<img src="https://raw.githubusercontent.com/kakkoyun/are-you-testing-your-observability/master/static/red_hat_white.png" style="height: 20%"/>
+import red_hat_white from './static/red_hat_white.png'
+
+<img src={red_hat_white} style="height: 20%"/>
 
 <div style="font-size: 70%">
 
