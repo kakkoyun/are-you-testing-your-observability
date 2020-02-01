@@ -926,13 +926,13 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 reg := prometheus.NewRegistry()
 
 metrics1 := NewServerMetrics(
-prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
 )
 metrics2 := NewServerMetrics(
-prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
 )
 metrics3 := NewServerMetrics(
-prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
 )
 
 // For endpoint /one:
@@ -969,13 +969,13 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 reg := prometheus.NewRegistry()
 
 metrics1 := NewServerMetrics(
-prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
 )
 metrics2 := NewServerMetrics(
-prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
 )
 metrics3 := NewServerMetrics(
-prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
+    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
 )
 
 // For endpoint /one:
@@ -1120,46 +1120,6 @@ And we are good, we can test different cases in similar way, all passed and we a
 
 ```go title="Pitfall #2: Not testing" subtitle="How it looks in Go code?"
 
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-```
-
-```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
 func TestLoadbalancer(t *testing.T) {
     // ...
     lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
@@ -1169,24 +1129,6 @@ func TestLoadbalancer(t *testing.T) {
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
 
 func TestLoadbalancer(t *testing.T) {
     // ...
@@ -1205,24 +1147,6 @@ func TestLoadbalancer(t *testing.T) {
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
 
 func TestLoadbalancer(t *testing.T) {
     // ...
@@ -1285,7 +1209,7 @@ serious.
 
 alert: HttpTooMany502Errors
   expr: |
-    sum(rate(http_requests_total{status="502"}[1m])) /
+    sum(rate(http_requests_total{code="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
   for: 5m
   labels:
@@ -1293,7 +1217,7 @@ alert: HttpTooMany502Errors
   annotations:
     summary: "HTTP errors 502 (instance {{ $labels.instance }})"
     description: |
-      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
+      "Too many HTTP requests with code 502 (> 5%)\n  VALUE = {{ $value }}\n
       LABELS: {{ $labels }}"
 
 ```
@@ -1324,7 +1248,47 @@ What we need to do, is actually verify more - so check if we instrumented out me
 
 <CodeSurfer>
 
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric value."
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+```
+
 ```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
 
 func TestLoadbalancer(t *testing.T) {
     // ...
@@ -1348,6 +1312,24 @@ func TestLoadbalancer(t *testing.T) {
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
 
 import (
     promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
@@ -1379,6 +1361,24 @@ func TestLoadbalancer(t *testing.T) {
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
 
 import (
     promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
@@ -1413,6 +1413,24 @@ func TestLoadbalancer(t *testing.T) {
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
 
 import (
     promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
@@ -1443,9 +1461,7 @@ func TestLoadbalancer(t *testing.T) {
     testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
 
     // Assert http_requests_total{code="502", method="get"} == 3 .
-    testutil.Equals(
-        t,
-        3,
+    testutil.Equals(t, 3,
         promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
      )
 }
@@ -1453,6 +1469,24 @@ func TestLoadbalancer(t *testing.T) {
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Such unit test will detect the problem!"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
 
 import (
     promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
@@ -1487,14 +1521,12 @@ func TestLoadbalancer(t *testing.T) {
     //       --- FAIL: TestLoadbalancer/#00 (0.00s)
     //           transport_test.go:190:
     //
-    //               exp: 1
+    //               exp: 3
     //
     //               got: 0
     //   FAIL
     //
-    testutil.Equals(
-        t,
-        3,
+    testutil.Equals(t, 3,
         promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
      )
 }
@@ -1505,7 +1537,7 @@ func TestLoadbalancer(t *testing.T) {
 
 <Notes>
 
-1)
+1) TODO
 
 We really recommend to extend your normal tests with metrics assertion for all your crucial metrics.
 
