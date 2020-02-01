@@ -367,11 +367,11 @@ var (
 
 // Top level ServeHTTP handler.
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  statusRec := newStatusRecorder(w)
-  next.ServeHTTP(statusRec, r)
+	statusRec := newStatusRecorder(w)
+	next.ServeHTTP(statusRec, r)
 
-  // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+	// Increment our counter with written status code and request method.
+	serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 }
 
 ```
@@ -391,11 +391,11 @@ var (
 
 // Top level ServeHTTP handler.
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  statusRec := newStatusRecorder(w)
-  next.ServeHTTP(statusRec, r)
+	statusRec := newStatusRecorder(w)
+	next.ServeHTTP(statusRec, r)
 
-  // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+	// Increment our counter with written status code and request method.
+	serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 }
 
 func init() {
@@ -419,11 +419,11 @@ var (
 
 // Top level ServeHTTP handler.
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  statusRec := newStatusRecorder(w)
-  next.ServeHTTP(statusRec, r)
+	statusRec := newStatusRecorder(w)
+	next.ServeHTTP(statusRec, r)
 
-  // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+	// Increment our counter with written status code and request method.
+	serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 }
 
 func init() {
@@ -478,6 +478,7 @@ import graph_requests from './static/graph-requests.png'
 <CodeSurfer>
 
 ```go 4,6 title="From code to graph" subtitle="We defined & instrumented our metric."
+
 var (
 	serverRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -504,9 +505,11 @@ var (
 # TYPE http_requests_total counter
 http_requests_total{code="200", method="get"} 1089
 http_requests_total{code="500", method="get"} 46
+
 ```
 
 </CodeSurfer>
+
 <Notes>
 
 1) How we can now use our metric? As you remember we defined this metric like this and we increment it every HTTP request.
@@ -613,9 +616,9 @@ func init() {
 	prometheus.MustRegister(serverRequestsTotal)
 }
 
-  // ...
-  // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// ...
+// Increment our counter with written status code and request method.
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -637,9 +640,9 @@ func init() {
 	prometheus.DefaultRegisterer.MustRegister(serverRequestsTotal)
 }
 
-  // ...
-  // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// ...
+// Increment our counter with written status code and request method.
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -671,9 +674,9 @@ func init() {
     ))
 }
 
-  // ...
-  // Increment our counter with written status code and request method.
-  serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// ...
+// Increment our counter with written status code and request method.
+serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -884,21 +887,21 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-  reg := prometheus.NewRegistry()
+reg := prometheus.NewRegistry()
 
-  // This will panic, because we register same metric 3 times...
-  metrics1 := NewServerMetrics(reg)
-  metrics2 := NewServerMetrics(reg)
-  metrics3 := NewServerMetrics(reg)
+// This will panic, because we register same metric 3 times...
+metrics1 := NewServerMetrics(reg)
+metrics2 := NewServerMetrics(reg)
+metrics3 := NewServerMetrics(reg)
 
-  // For endpoint /one:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -922,26 +925,26 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-  reg := prometheus.NewRegistry()
+reg := prometheus.NewRegistry()
 
-  metrics1 := NewServerMetrics(
-    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
-  )
-  metrics2 := NewServerMetrics(
-    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
-  )
-  metrics3 := NewServerMetrics(
-    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
-  )
+metrics1 := NewServerMetrics(
+prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
+)
+metrics2 := NewServerMetrics(
+prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
+)
+metrics3 := NewServerMetrics(
+prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
+)
 
-  // For endpoint /one:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
@@ -965,35 +968,35 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-  reg := prometheus.NewRegistry()
+reg := prometheus.NewRegistry()
 
-  metrics1 := NewServerMetrics(
-    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
-  )
-  metrics2 := NewServerMetrics(
-    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
-  )
-  metrics3 := NewServerMetrics(
-    prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
-  )
+metrics1 := NewServerMetrics(
+prometheus.WrapWithLabels(prometheus.Labels{"handler":"/one"}, reg),
+)
+metrics2 := NewServerMetrics(
+prometheus.WrapWithLabels(prometheus.Labels{"handler":"/two"}, reg),
+)
+metrics3 := NewServerMetrics(
+prometheus.WrapWithLabels(prometheus.Labels{"handler":"/three"}, reg),
+)
 
-  // For endpoint /one:
-  metrics1.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /one:
+metrics1.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /two:
-  metrics2.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /two:
+metrics2.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  // For endpoint /three:
-  metrics3.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+// For endpoint /three:
+metrics3.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
-  # HELP http_requests_total Tracks the number of HTTP requests.
-  # TYPE http_requests_total counter
-  http_requests_total{handler="/one", code="200", method="get"} 1445
-  http_requests_total{handler="/one", code="500", method="get"} 23
-  http_requests_total{handler="/two", code="200", method="get"} 445
-  http_requests_total{handler="/two", code="500", method="get"} 0
-  http_requests_total{handler="/three", code="200", method="get"} 645
-  http_requests_total{handler="/three", code="500", method="get"} 40
+# HELP http_requests_total Tracks the number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{handler="/one", code="200", method="get"} 1445
+http_requests_total{handler="/one", code="500", method="get"} 23
+http_requests_total{handler="/two", code="200", method="get"} 445
+http_requests_total{handler="/two", code="500", method="get"} 0
+http_requests_total{handler="/three", code="200", method="get"} 645
+http_requests_total{handler="/three", code="500", method="get"} 40
 
 ```
 
@@ -1065,6 +1068,36 @@ With metrics in my opinion it's totally different story. They has to be tested. 
 
 ---
 
+import d12 from './static/d12.png'
+
+<h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's test our LB!</h2>
+
+<Image src={d11} size='contain'/>
+
+<Notes>
+
+So let's take our loadbalancer, again and newly added HTTP request total counter.
+We are solid 10x developers right, so we want to test our code, so we wrote
+some unit test!
+
+</Notes>
+
+---
+
+import d13 from './static/d13.png'
+
+<h2 style="text-align: center; margin: 0px 10px 0 10px;">Unit testing lbtransport.RoundTripper</h2>
+
+<Image src={d13} size='contain'/>
+
+<Notes>
+
+
+</Notes>
+
+---
+
+
 <CodeSurfer>
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's take our http requests metric."
@@ -1090,6 +1123,46 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's consider example impl of LB in ReverseProxy"
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+    targets := t.discovery.Targets()
+    // ...
+    for r.Context().Err() == nil {
+        target := t.picker.Pick(targets)
+        // ...
+        r.URL = target.DialAddr
+        resp, err := t.parent.RoundTrip(r)
+        // handle err, etc...
+        resp.Header.Set("X-lb-host", target.DialAddr)
+        return resp, nil
+    }
+}
+
+func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	statusRec := newStatusRecorder(w)
+	m.reverseProxy.ServeHTTP(statusRec, r)
+
+	// Increment our counter with written status code and request method.
+	m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+}
 
 ```
 
@@ -1129,7 +1202,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
             # TYPE http_requests_total counter
             http_requests_total{code="200", method="get"} 1
 
-              instead of:
+            	instead of:
 
             # HELP http_requests_total Tracks the number of HTTP requests.
             # TYPE http_requests_total counter
@@ -1187,7 +1260,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
             # TYPE http_requests_total counter
             http_requests_total{code="200", method="get"} 1
 
-              instead of:
+            	instead of:
 
             # HELP http_requests_total Tracks the number of HTTP requests.
             # TYPE http_requests_total counter
@@ -1361,6 +1434,10 @@ We really recommend to extend your normal tests with metrics assertion for all y
 
 <Notes>
 
+KEMAL
+
+TODO: Terraform for yourself
+
 Lack of consistency. So there are some useful methods on what metrics you should define
 for your system, usually a web servers. The four golden signals from SRE book, USE method, RED method.
 
@@ -1440,14 +1517,14 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 // Top level ServeHTTP handler.
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  start := time.Now()
-  defer metrics.requestDuration.WithLabelValues(statusRec.Status(), r.Method)).Observe(time.Since(start))
+	start := time.Now()
+	defer metrics.requestDuration.WithLabelValues(statusRec.Status(), r.Method)).Observe(time.Since(start))
 
-  statusRec := newStatusRecorder(w)
-  next.ServeHTTP(statusRec, r)
+	statusRec := newStatusRecorder(w)
+	next.ServeHTTP(statusRec, r)
 
-  // Increment our counter with written status code and request method.
-  metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+	// Increment our counter with written status code and request method.
+	metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 }
 
 ```
@@ -1455,6 +1532,10 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 </CodeSurfer>
 
 <Notes>
+
+KEMAL
+
+TODO: Terraform for yourself
 
 1) Does our Server Metrics satisfy RED method?
 2) We have certainly requests
@@ -1597,6 +1678,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	reg.MustRegister(m.requestsTotal)
 	return ins
 }
+
 ```
 
 ```go title="Pitfall #4: Naming - Stability" subtitle="Let's say we alert on too many 5xx responses."
@@ -1767,75 +1849,66 @@ So let's see how we can fix it.
 
 ```go title="Pitfall #5: Cardinality - Unbounded labels" subtitle="Let's define a metric." 7:14
 
-type DialerMetrics struct {
-	connFailedTotal *prometheus.CounterVec
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
 }
 
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
 	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
+	reg.MustRegister(m.requestsTotal)
+	return ins
 }
+
 
 ```
 
 ```go 24:28 subtitle="Open a connection"
 
-type DialerMetrics struct {
-	connFailedTotal *prometheus.CounterVec
+
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
 }
 
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
 	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
+	reg.MustRegister(m.requestsTotal)
+	return ins
 }
 
-func dialClientConnTracker(...) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(err).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{...}, nil
-}
+// TODO: Put path, request id in a label
 
 ```
 
 ```go subtitle="Let's check out our metrics... 😲"
+
+// TODO: Update this examples
+
 # HELP conntrack_dialer_conn_failed_total Total number of connections failed to dial by the dialer.
 # TYPE conntrack_dialer_conn_failed_total counter
-conntrack_dialer_conn_failed_total{reason="<nil>"} 1
-conntrack_dialer_conn_failed_total{reason="lookup example.com on localhost: err..."} 1
-conntrack_dialer_conn_failed_total{reason="lookup thanos.io on 8.8.8.8: err..."} 1
-conntrack_dialer_conn_failed_total{reason="lookup redhat.com on localhost: err..."} 1
-conntrack_dialer_conn_failed_total{reason="syscall: unimplemented EpollWait"} 1
-conntrack_dialer_conn_failed_total{reason="syscall.SIGINT: series of unfortunate things happened"} 1
-conntrack_dialer_conn_failed_total{reason="unix: test returned fd in TestEpoll"} 1
-conntrack_dialer_conn_failed_total{reason="Invalid value for argument: client: nil"} 1
+http_requests_total{code="", method="", request_id="", path="<nil>"} 1
+http_requests_total{code="", method="", request_id="", path="lookup example.com on localhost: err..."} 1
+http_requests_total{code="", method="", request_id="", path="lookup thanos.io on 8.8.8.8: err..."} 1
+http_requests_total{code="", method="", request_id="", path="lookup redhat.com on localhost: err..."} 1
+http_requests_total{code="", method="", request_id="", path="syscall: unimplemented EpollWait"} 1
+http_requests_total{code="", method="", request_id="", path="syscall.SIGINT: series of unfortunate things happened"} 1
+http_requests_total{code="", method="", request_id="", path="unix: test returned fd in TestEpoll"} 1
+http_requests_total{code="", method="", request_id="", path="Invalid value for argument: client: nil"} 1
 ```
 
 </CodeSurfer>
@@ -1866,37 +1939,32 @@ Anything you can think of as arbitrary.
 
 // ...
 
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
 	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
+	reg.MustRegister(m.requestsTotal)
+	return ins
 }
 
-func dialClientConnTracker(...) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(err).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{...}, nil
-}
+// TODO: Put path, request id in a label
 
 ```
 
 ```go subtitle="Never use arbitrary data as label values."
 
+// TODO: Remove constants
+
 const (
 	failedResolution  = "resolution"
 	failedConnRefused = "refused"
@@ -1906,37 +1974,32 @@ const (
 
 // ...
 
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
 	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
+	reg.MustRegister(m.requestsTotal)
+	return ins
 }
 
-func dialClientConnTracker(...) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(err).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{...}, nil
-}
+// TODO: Put path, request id in a label
 
 ```
 
 ```go
 
+// TODO: Remove constants
+
 const (
 	failedResolution  = "resolution"
 	failedConnRefused = "refused"
@@ -1946,31 +2009,22 @@ const (
 
 // ...
 
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
 }
 
-func dialClientConnTracker(...) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
-		return conn, err
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
 	}
-
-	return &clientConnTracker{...}, nil
+	reg.MustRegister(m.requestsTotal)
+	return ins
 }
 
 ```
@@ -1986,119 +2040,24 @@ const (
 
 // ...
 
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
-	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-func dialClientConnTracker(...) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{...}, nil
-}
-
-func dialErrToReason(err error) string {
-	var e *net.OpError
-	if errors.As(err, &e) {
-		switch nestErr := e.Err.(type) {
-		case *net.DNSError:
-			return failedResolution
-		case *os.SyscallError:
-			if nestErr.Err == syscall.ECONNREFUSED {
-				return failedConnRefused
-			}
-
-			return failedUnknown
-		}
-
-		if e.Timeout() {
-			return failedTimeout
-		}
-	} else if err == context.Canceled || err == context.DeadlineExceeded {
-		return failedTimeout
-	}
-
-	return failedUnknown
-}
-
-```
-
-```go subtitle="Map errors to label values" 42[14:27],43,44[15:50],46,49,52[9:27],53,59
-
-const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
-	failedUnknown     = "unknown"
-)
-
 // ...
 
-func NewDialerMetrics(reg prometheus.Registerer) *DialerMetrics {
-	m := &DialerMetrics{
-		connFailedTotal: prometheus.NewCounterVec(
+type ServerMetrics struct {
+	requestsTotal    *prometheus.CounterVec
+}
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Subsystem: "conntrack",
-				Name:      "dialer_conn_failed_total",
-				Help:      "Total number of connections failed to dial by the dialer.",
-			}, []string{"reason"}),
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method"},
+		),
 	}
-
-	if reg != nil {
-		reg.MustRegister(m.connClosedTotal)
-	}
-
-	return m
-}
-
-func dialClientConnTracker(...) (net.Conn, error) {
-	conn, err := parentDialContextFunc(ctx, ntk, addr)
-	if err != nil {
-		metrics.connFailedTotal.WithLabelValues(dialErrToReason(err)).Inc()
-		return conn, err
-	}
-
-	return &clientConnTracker{...}, nil
-}
-
-func dialErrToReason(err error) string {
-	var e *net.OpError
-	if errors.As(err, &e) {
-		switch nestErr := e.Err.(type) {
-		case *net.DNSError:
-			return failedResolution
-		case *os.SyscallError:
-			if nestErr.Err == syscall.ECONNREFUSED {
-				return failedConnRefused
-			}
-
-			return failedUnknown
-		}
-
-		if e.Timeout() {
-			return failedTimeout
-		}
-	} else if err == context.Canceled || err == context.DeadlineExceeded {
-		return failedTimeout
-	}
-
-	return failedUnknown
+	reg.MustRegister(m.requestsTotal)
+	return ins
 }
 
 ```
@@ -2429,7 +2388,7 @@ Histograms are actually great to collect observations from your system.
 
 Histograms can be used to produce arbitrary quantile estimations. You can even estimate the mean.
 
-They accummulate theur observation in to buckets.
+They accummulate their observation in to buckets.
 
 Hence they have significantly less storage requirements compare to storing raw data.
 
@@ -2442,6 +2401,10 @@ Lets see some example bucket layouts and how to fix them.
 ---
 
 <Notes>
+
+TODO: SLOSs
+TODO: Why we need to adjust the buckets on the client side?
+TODO: What are the addvantages?
 
 KEMAL
 
