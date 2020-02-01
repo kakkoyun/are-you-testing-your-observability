@@ -903,7 +903,7 @@ metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 
 ```
 
-``` go 23,26,29 title="Pitfall #1: Getting rid of globals." subtitle="We can wrap register to inject label."
+```go 23,26,29 title="Pitfall #1: Getting rid of globals." subtitle="We can wrap register to inject label."
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1082,21 +1082,43 @@ some unit test!
 
 ---
 
+import d13 from './static/d13.png'
+
 <h2 style="text-align: center; margin: 0px 10px 0 10px;">Unit testing lbtransport.RoundTripper</h2>
 
-<Image src={d11} size='contain'/>
+<Image src={d13} size='contain'/>
 
 <Notes>
 
+And yes, it involves Mocking the Discoverer and Round Robin Picker.
+Mocking our Replicas for some case like, for example all replica being down
+and not available.
+
+And sending few mocked HTTP requests against that.
 
 </Notes>
 
 ---
 
+import d14 from './static/d14.png'
+
+<h2 style="text-align: center; margin: 0px 10px 0 10px;">Unit testing lbtransport.RoundTripper</h2>
+
+<Image src={d14} size='contain'/>
+
+<Notes>
+
+So we run this test, we run 3 request, we assert that response is 502, so Bad Gateway, we could
+not loadabalance - expected error case that can happen.
+
+And we are good, we can test different cases in similar way, all passed and we are fine, right?
+</Notes>
+
+---
 
 <CodeSurfer>
 
-```go title="Pitfall #2: Not testing" subtitle="Let's take our http requests metric."
+```go title="Pitfall #2: Not testing" subtitle="How it looks in Go code?"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1118,17 +1140,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```go title="Pitfall #2: Not testing" subtitle="Let's MAKE a bug in recording status!"
-
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-
-```
-
-```go title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
-
-```
-
-```go 35,36,39,58,59,60,61,62,63,64,65,66,67,68,69,70,71 title="Pitfall #2: Not testing" subtitle="Nope as we don't assert any metric value."
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1148,110 +1160,15 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-			/* BUG: In this case the loadbalancer is working as expected, but metric:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="200", method="get"} 1
-
-            	instead of:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="502", method="get"} 1
-			*/
-			expectedCode: 502,
-		},
-```
-
-```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Prometheus library allows asserting on values!"
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's create metrics instance and initial assertion."
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-    // No requests, no metric should be exposed.
-	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-
-            /* BUG: In this case the loadbalancer is working as expected, but metric:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="200", method="get"} 1
-
-            	instead of:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="502", method="get"} 1
-			*/
-			expectedCode: 502,
-	    },
-		// other cases...
-	} {
-```
-
-```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's add expectations for each case about metric values."
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-    // No requests, no metric should be exposed.
-	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-			requestsCode502: 1,
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
 }
 
 ```
 
-```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="And assert on them."
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1271,24 +1188,23 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-    // No requests, no metric should be exposed.
-	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-			requestsCode502: 1,
-			)
-			testutil.Equals(t, tcase.expectedCode, rec.Code)
-			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
+    // Send 3x HTTP requests.
+    rec1 := httptest.NewRecorder()
+    lb.ServeHTTP(rec1, httptest.NewRequest("GET", "http://mocked", nil))
+    rec2 := httptest.NewRecorder()
+    lb.ServeHTTP(rec2, httptest.NewRequest("GET", "http://mocked", nil))
+    rec3 := httptest.NewRecorder()
+    lb.ServeHTTP(rec3, httptest.NewRequest("GET", "http://mocked", nil))
 
- 			testutil.Equals(
- 			    t,
- 			    tcase.requestsCode502,
- 			    promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
- 			 )
- 			testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
 }
 
 ```
 
-```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Now, test will catch our bug!"
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1308,26 +1224,23 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-	lb := NewLoadbalancingTransport(metrics, mockedDiscovery, mockedPicker, mockedTransport)
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
+    // Send 3x HTTP requests.
+    rec1 := httptest.NewRecorder()
+    lb.ServeHTTP(rec1, httptest.NewRequest("GET", "http://mocked", nil))
+    rec2 := httptest.NewRecorder()
+    lb.ServeHTTP(rec2, httptest.NewRequest("GET", "http://mocked", nil))
+    rec3 := httptest.NewRecorder()
+    lb.ServeHTTP(rec3, httptest.NewRequest("GET", "http://mocked", nil))
 
-    // No requests, no metric should be exposed.
-	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-			requestsCode502: 1,
-            // === RUN   TestLoadbalancer/#00
-            //       --- FAIL: TestLoadbalancer/#00 (0.00s)
-            //           transport_test.go:190:
-            //
-            //               exp: 1
-            //
-            //               got: 0
-            //   FAIL
-            //
- 			testutil.Equals(
- 			    t,
- 			    tcase.requestsCode502,
- 			    promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
- 			 )
- 			testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+    // Assert 3x responses with 502 status code.
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+
 }
 
 ```
@@ -1336,29 +1249,263 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 <Notes>
 
-1) Ok let's take our http requests example.
-2) And let's take some portion of loadbalancer logic. Again, We have RoundTripper that takes
-targets from discovery, picks one from the list, forwards the request and marks the host
-it forwarded to in a response header.
-And below we have ServeHTTP handler which again increment our metric while recording the status code.
-3) Now let's imagine someone introduce a bug. A bug that wrongly records every replica status code to 200.
-This is scary as our e.g graph will not show any errors while clearly there is a problem with loadbalancing.
-If we have alert on errors it will not notify us as well so our monitoring is not reliable (!!!)
-4) And of course our loadbalancer have already a unit test using nice table test pattern right?
-5) We have some test cases with different loadbalancing situations, for example loadbalancer error.
-6) For each test case we fire a request and check if loadbalancer redirected and proxy response with the right
-code. We also check if it picked expected host.
-But, will that catch our bug with metric?
-7) Not really in case where replica sends 502, metric will have actually 200 code which is wrong as you can see.
-We expect http_request_total{code="502"} being incremented instead.
-And unfortunately our tests returns success instead, so is missing validation for metrics! Let's fix this.
-8) Let's fix this. Let's use awesome testutil package from Prometheus client!
-9) Let's add metric instance and assertion in no metric, since we did not sen any requests yet, we expect nothing as well.
-so we technically assert on cardinality of this metrics - so how many metrics it will produce - 0 means no metric.
-10) We add expectation for each case, that our metric for 502 should be 1
-11) We assert on this vs expectations using ToFloat64 function for http requests total metric 502 and check that
-nothing else was incremented.
-12) Now our test will fail as expected, noticing that the metric was incremented incorrectly!
+1) Ok, so let's see how it looks in our Go code! And Let's take our http requests example.
+2) We then create a unit test, Send 3 HTTP requests, Assert 3x responses 502 status code.. and all good!
+
+</Notes>
+
+---
+
+import d15 from './static/d15.png'
+
+<h2 style="text-align: center; margin: 0px 10px 0 10px;">Do we verified everything?</h2>
+
+<Image src={d15} size='contain'/>
+
+<Notes>
+
+Nice, but what if did not instrument our metric correctly, right?
+
+For example we made a bug while incrementing a http request total metric, and we always
+instrument it with 200 HTTP request code.
+
+Now what you can see.. our unit test passed just fine, however the actual metric exposed
+to Prometheus shows incorrect information.
+
+You can think that this is not a big deal, just some analytics will mislead. Well it is actually
+serious.
+
+</Notes>
+
+---
+
+<CodeSurfer>
+
+```go title="Pitfall #2: Not testing" subtitle="Alert for too many errors will be missed."
+
+alert: HttpTooMany502Errors
+  expr: |
+    sum(rate(http_requests_total{status="502"}[1m])) /
+      sum(rate(http_requests_total[1m])) * 100 > 5
+  for: 5m
+  labels:
+    severity: error
+  annotations:
+    summary: "HTTP errors 502 (instance {{ $labels.instance }})"
+    description: |
+      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
+      LABELS: {{ $labels }}"
+
+```
+
+</CodeSurfer>
+
+<Notes>
+
+Imagine this alert, it's one the...
+
+</Notes>
+
+---
+
+import d16 from './static/d16.png'
+
+<h2 style="text-align: center; margin: 0px 10px 0 10px;">Let's verify correct metric instrumentation!</h2>
+
+<Image src={d16} size='contain'/>
+
+<Notes>
+
+What we need to do, is actually verify more - so check if we instrumented out metric well!
+
+</Notes>
+
+---
+
+<CodeSurfer>
+
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
+    // Send 3x HTTP requests.
+    rec1 := httptest.NewRecorder()
+    lb.ServeHTTP(rec1, httptest.NewRequest("GET", "http://mocked", nil))
+    rec2 := httptest.NewRecorder()
+    lb.ServeHTTP(rec2, httptest.NewRequest("GET", "http://mocked", nil))
+    rec3 := httptest.NewRecorder()
+    lb.ServeHTTP(rec3, httptest.NewRequest("GET", "http://mocked", nil))
+
+    // Assert 3x responses with 502 status code.
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+
+}
+
+```
+
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+import (
+    promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
+)
+
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
+    // Assert 0 cardinality for http_requests_total{}
+    // No requests, no metric should be exposed.
+	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+
+    // Send 3x HTTP requests.
+    rec1 := httptest.NewRecorder()
+    lb.ServeHTTP(rec1, httptest.NewRequest("GET", "http://mocked", nil))
+    rec2 := httptest.NewRecorder()
+    lb.ServeHTTP(rec2, httptest.NewRequest("GET", "http://mocked", nil))
+    rec3 := httptest.NewRecorder()
+    lb.ServeHTTP(rec3, httptest.NewRequest("GET", "http://mocked", nil))
+
+    // Assert 3x responses with 502 status code.
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+
+}
+
+```
+
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+import (
+    promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
+)
+
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
+    // Assert 0 cardinality for http_requests_total{}
+    // No requests, no metric should be exposed.
+	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+
+    // Send 3x HTTP requests.
+    rec1 := httptest.NewRecorder()
+    lb.ServeHTTP(rec1, httptest.NewRequest("GET", "http://mocked", nil))
+    rec2 := httptest.NewRecorder()
+    lb.ServeHTTP(rec2, httptest.NewRequest("GET", "http://mocked", nil))
+    rec3 := httptest.NewRecorder()
+    lb.ServeHTTP(rec3, httptest.NewRequest("GET", "http://mocked", nil))
+
+    // Assert 3x responses with 502 status code.
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+
+    // Assert 1 cardinality for http_requests_total{} .
+    testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+
+}
+
+```
+
+```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+
+import (
+    promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
+)
+
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
+    // Assert 0 cardinality for http_requests_total{}
+    // No requests, no metric should be exposed.
+	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+
+    // Send 3x HTTP requests.
+    rec1 := httptest.NewRecorder()
+    lb.ServeHTTP(rec1, httptest.NewRequest("GET", "http://mocked", nil))
+    rec2 := httptest.NewRecorder()
+    lb.ServeHTTP(rec2, httptest.NewRequest("GET", "http://mocked", nil))
+    rec3 := httptest.NewRecorder()
+    lb.ServeHTTP(rec3, httptest.NewRequest("GET", "http://mocked", nil))
+
+    // Assert 3x responses with 502 status code.
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+
+    // Assert 1 cardinality for http_requests_total{} .
+    testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+
+    // Assert http_requests_total{code="502", method="get"} == 3 .
+    testutil.Equals(
+        t,
+        3,
+        promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
+     )
+}
+
+```
+
+```go title="Pitfall #2: Not testing" subtitle="Such unit test will detect the problem!"
+
+import (
+    promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
+)
+
+func TestLoadbalancer(t *testing.T) {
+    // ...
+    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+​
+    // Assert 0 cardinality for http_requests_total{}
+    // No requests, no metric should be exposed.
+	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+
+    // Send 3x HTTP requests.
+    rec1 := httptest.NewRecorder()
+    lb.ServeHTTP(rec1, httptest.NewRequest("GET", "http://mocked", nil))
+    rec2 := httptest.NewRecorder()
+    lb.ServeHTTP(rec2, httptest.NewRequest("GET", "http://mocked", nil))
+    rec3 := httptest.NewRecorder()
+    lb.ServeHTTP(rec3, httptest.NewRequest("GET", "http://mocked", nil))
+
+    // Assert 3x responses with 502 status code.
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+    testutil.Equals(t, 502, rec.Code)
+
+    // Assert 1 cardinality for http_requests_total{} .
+    testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
+
+    // Assert http_requests_total{code="502", method="get"} == 3 .
+    // === RUN   TestLoadbalancer/#00
+    //       --- FAIL: TestLoadbalancer/#00 (0.00s)
+    //           transport_test.go:190:
+    //
+    //               exp: 1
+    //
+    //               got: 0
+    //   FAIL
+    //
+    testutil.Equals(
+        t,
+        3,
+        promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
+     )
+}
+
+```
+
+</CodeSurfer>
+
+<Notes>
+
+1)
 
 We really recommend to extend your normal tests with metrics assertion for all your crucial metrics.
 
