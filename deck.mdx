@@ -310,8 +310,6 @@ it returns error!
 
 ---
 
-import d12 from './static/d12.png'
-
 <h2 style="text-align: center; margin: 0 10px 0 10px;"> Let's instrument our LB with Prometheus metrics!</h2>
 
 <Image src={d11} size='contain'/>
@@ -1118,50 +1116,6 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	}
 	reg.MustRegister(m.requestsTotal)
 	return ins
-}
-
-```
-
-```go title="Pitfall #2: Not testing" subtitle="Let's consider example impl of LB in ReverseProxy"
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	statusRec := newStatusRecorder(w)
-	m.reverseProxy.ServeHTTP(statusRec, r)
-
-	// Increment our counter with written status code and request method.
-	m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
 }
 
 ```
