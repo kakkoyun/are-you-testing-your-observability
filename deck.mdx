@@ -1799,13 +1799,11 @@ So let's see how we can fix it.
 
 </Notes>
 
+---
+
 <CodeSurfer>
 
-```go title="Pitfall #5: Cardinality - Unbounded labels" subtitle="Let's define a metric." 7:14
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
+```go title="Pitfall #5: Cardinality - Unbounded labels" subtitle="Let's define a metric."
 
 // NewServerMetrics provides ServerMetrics.
 func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
@@ -1821,15 +1819,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-
 ```
 
-```go 24:28 subtitle="Open a connection"
-
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
+```go title="Pitfall #5: Cardinality - Unbounded labels" subtitle="Let's define a metric." 5:9
 
 // NewServerMetrics provides ServerMetrics.
 func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
@@ -1845,33 +1837,140 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-// TODO: Put path, request id in a label
+```
+
+```go title="#5: Cardinality - Unbounded labels"  subtitle="Let's track request per path"
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method", "path"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
 
 ```
 
-```go subtitle="Let's check out our metrics... 😲"
+```go title="#5: Cardinality - Unbounded labels" subtitle="Let's check out our metrics... 😲"
 
-// TODO: Update this examples
+# HELP http_requests_total Tracks the number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{code="200", method="", path="/metrics"} 15
+http_requests_total{code="200", method="", path="/status"} 2
+http_requests_total{code="200", method="", path="/stores"} 13
+http_requests_total{code="200", method="", path="/ping"} 123
+http_requests_total{code="200", method="", path="/articles"} 221
+http_requests_total{code="200", method="", path="/article/1"} 1
+http_requests_total{code="200", method="", path="/article/2"} 14
+http_requests_total{code="200", method="", path="/article/3"} 10
+http_requests_total{code="200", method="", path="/article/4"} 1
 
-# HELP conntrack_dialer_conn_failed_total Total number of connections failed to dial by the dialer.
-# TYPE conntrack_dialer_conn_failed_total counter
-http_requests_total{code="", method="", request_id="", path="<nil>"} 1
-http_requests_total{code="", method="", request_id="", path="lookup example.com on localhost: err..."} 1
-http_requests_total{code="", method="", request_id="", path="lookup thanos.io on 8.8.8.8: err..."} 1
-http_requests_total{code="", method="", request_id="", path="lookup redhat.com on localhost: err..."} 1
-http_requests_total{code="", method="", request_id="", path="syscall: unimplemented EpollWait"} 1
-http_requests_total{code="", method="", request_id="", path="syscall.SIGINT: series of unfortunate things happened"} 1
-http_requests_total{code="", method="", request_id="", path="unix: test returned fd in TestEpoll"} 1
-http_requests_total{code="", method="", request_id="", path="Invalid value for argument: client: nil"} 1
+```
+
+```go title="#5: Cardinality - Unbounded labels" subtitle="Just noise 😲"
+
+# HELP http_requests_total Tracks the number of HTTP requests.
+# TYPE http_requests_total counter
+http_requests_total{code="200", method="", path="/metrics"} 15
+http_requests_total{code="200", method="", path="/status"} 2
+http_requests_total{code="200", method="", path="/stores"} 13
+http_requests_total{code="200", method="", path="/ping"} 123
+http_requests_total{code="200", method="", path="/articles"} 221
+http_requests_total{code="200", method="", path="/article/1"} 1
+http_requests_total{code="200", method="", path="/article/2"} 14
+http_requests_total{code="200", method="", path="/article/3"} 10
+http_requests_total{code="200", method="", path="/article/4"} 1
+http_requests_total{code="401", method="", path="/articles"} 221
+http_requests_total{code="401", method="", path="/article/1"} 1
+http_requests_total{code="401", method="", path="/article/2"} 14
+http_requests_total{code="401", method="", path="/article/3"} 10
+http_requests_total{code="401", method="", path="/article/4"} 1
+http_requests_total{code="403", method="", path="admin"} 287
+http_requests_total{code="404", method="", path="/robots.txt"} 11424
+http_requests_total{code="404", method="", path="/lookup/zzx"} 12
+http_requests_total{code="404", method="", path="/helloissomeonethre"} 1
+http_requests_total{code="401", method="", path="/article/112"} 6
+http_requests_total{code="401", method="", path="/article/222"} 48
+http_requests_total{code="401", method="", path="/article/hello"} 10
+http_requests_total{code="401", method="", path="/article/99"} 1
+
 ```
 
 </CodeSurfer>
 
 ---
 
+<CodeSurfer>
+
+```go title="#5: Cardinality - Unbounded labels"  subtitle="A better option."
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method", "path"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+```
+
+```go title="#5: Cardinality - Unbounded labels"  subtitle="A better option."
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method", "handler"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+```
+
+```go title="#5: Cardinality - Unbounded labels"  subtitle="A better option."
+
+// NewServerMetrics provides ServerMetrics.
+func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
+	m := &ServerMetrics{
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Tracks the number of HTTP requests.",
+			}, []string{"code", "method", "handler"},
+		),
+	}
+	reg.MustRegister(m.requestsTotal)
+	return ins
+}
+
+// TODO: Add mux.Handle ...
+
+```
+
+</CodeSurfer>
+
 <Notes>
 
 KEMAL
+
+TODO: Prometheus and metrics in general not for logging and discrete event tracking
 
 1)
 Here we are at the beginning again, so how can we improve this?
@@ -1886,137 +1985,6 @@ Same principle is valid for the paths, user ids, session ids.
 Anything you can think of as arbitrary.
 
 </Notes>
-
-<CodeSurfer>
-
-```go 5:11,22:25 subtitle="How can we improve this?"
-
-// ...
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-// TODO: Put path, request id in a label
-
-```
-
-```go subtitle="Never use arbitrary data as label values."
-
-// TODO: Remove constants
-
-const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
-	failedUnknown     = "unknown"
-)
-
-// ...
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-// TODO: Put path, request id in a label
-
-```
-
-```go
-
-// TODO: Remove constants
-
-const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
-	failedUnknown     = "unknown"
-)
-
-// ...
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-```
-
-```go subtitle="Map errors to label values"
-
-const (
-	failedResolution  = "resolution"
-	failedConnRefused = "refused"
-	failedTimeout     = "timeout"
-	failedUnknown     = "unknown"
-)
-
-// ...
-
-// ...
-
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-```
-
-</CodeSurfer>
 
 ---
 
@@ -2105,6 +2073,23 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```go title="Pitfall #6: Histogram Cardinality Explosion"
 
+# HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.001"} 0
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.01"} 1
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.1"} 3
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.3"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.6"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="1"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="3"} 8
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="+Inf"} 302
+http_request_duration_seconds_sum{code="200",handler="/lb",method="get"} 3230.08239999999999999
+http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 302
+
+```
+
+```go title="Pitfall #6: Histogram Cardinality Explosion" 3,17
+
 var (
 	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120}
 )
@@ -2135,23 +2120,23 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.001"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.01"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.1"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.3"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.6"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="3"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="6"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="9"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="20"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="30"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="60"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="90"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="120"} 30
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 30
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.08239999999999999
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 30
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.001"} 0
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.01"} 1
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.1"} 3
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.3"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.6"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="1"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="3"} 8
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="6"} 30
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="9"} 33
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="20"} 38
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="30"} 39
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="60"} 41
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="90"} 45
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="120"} 47
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="+Inf"} 302
+http_request_duration_seconds_sum{code="200",handler="/lb",method="get"} 3230.08239999999999999
+http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 302
 
 ```
 
@@ -2187,27 +2172,25 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.001"} 0
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.01"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.1"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.3"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.6"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="3"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="6"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="9"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="20"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="30"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="40"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="50"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="60"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="90"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="120"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="150"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="200"} 18
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 18
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.0480237
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 18
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.001"} 0
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.01"} 1
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.1"} 3
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.3"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.6"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="1"} 6
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="3"} 8
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="6"} 30
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="9"} 33
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="20"} 38
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="30"} 39
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="60"} 41
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="90"} 45
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="120"} 47
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="150"} 118
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="200"} 258
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="+Inf"} 302
+http_request_duration_seconds_sum{code="200",handler="/lb",method="get"} 3230.08239999999999999
+http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 302
 
 ```
 
@@ -2311,6 +2294,7 @@ http_request_duration_seconds_bucket{code="200",handler="demo-refused-conn-somet
 http_request_duration_seconds_bucket{code="200",handler="demo-refused-conn-sometimes",method="post",le="+Inf"} 1
 http_request_duration_seconds_sum{code="200",handler="demo-refused-conn-sometimes",method="post"} 4.46e-05
 http_request_duration_seconds_count{code="200",handler="demo-refused-conn-sometimes",method="post"} 1
+
 
 ```
 
@@ -2446,16 +2430,16 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.001"} 1
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.01"} 49
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.1"} 49
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.3"} 49
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.6"} 49
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="1"} 49
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="3"} 49
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 49
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.11527970000000001
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.001"} 1
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.01"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.1"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.3"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.6"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="1"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="3"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="+Inf"} 49
+http_request_duration_seconds_sum{code="200",handler="/lb",method="get"} 0.11527970000000001
+http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 49
 
 ```
 
@@ -2493,15 +2477,15 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.001"} 3
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.0012000000000000001"} 3
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.0014000000000000002"} 10
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.0016000000000000003"} 21
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.0018000000000000004"} 25
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="0.0020000000000000005"} 29
-http_request_duration_seconds_bucket{code="200",handler="/metrics",method="get",le="+Inf"} 49
-http_request_duration_seconds_sum{code="200",handler="/metrics",method="get"} 0.10939249999999999
-http_request_duration_seconds_count{code="200",handler="/metrics",method="get"} 49
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.001"} 3
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.0012000000000000001"} 3
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.0014000000000000002"} 10
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.0016000000000000003"} 21
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.0018000000000000004"} 25
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.0020000000000000005"} 29
+http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="+Inf"} 49
+http_request_duration_seconds_sum{code="200",handler="/lb",method="get"} 0.10939249999999999
+http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 49
 
 ```
 
