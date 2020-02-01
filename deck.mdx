@@ -331,6 +331,8 @@ We can introduce this metric really in few simple steps.
 
 ```go title="Server HTTP request counter" subtitle="Import Prometheus Go client package."
 
+# You can find list of all available clients for 18 programming languages here:
+# https://prometheus.io/docs/instrumenting/clientlibs/#client-libraries
 import "github.com/prometheus/client_golang/prometheus"
 
 ```
@@ -444,11 +446,13 @@ srv := &http.Server{Handler: mux}
 
 <Notes>
 
-1) First of all we have to import Prometheus Go client library.
-During our talk we will be talking mainly about Prometheus client Go module, which is designed to help
-with instrumenting any Go application. It's tiny, heavily optimized and quite simple.
+1) First of all we have to import Prometheus Go client library. We will show here an
+example on how to add metric in Go language, but it's equally simple in other languages as well.
+Similar libraries exists in 18 other programming languages.
 
-2) As a next step we need to define variable for the our counter of requests. We pick a name, a description
+However, we are focusing here on Go, since we are working with Go already 5-6years.
+
+2) To add server HTTP metrics, As a next step we need to define variable for the our counter of requests. We pick a name, a description
 and certain "labels" which will be our dimensions for this counter. Each unique value in any of those labels will
 result in totally new series in Prometheus system.
 
@@ -519,7 +523,7 @@ import d10 from './static/d10.png'
 
 *Pulling e.g every 15 seconds*
 
-<Image src={d10} size='contain'/>
+<Image src={d12} size='contain'/>
 
 <Notes>
 
@@ -558,7 +562,7 @@ import pitfalls from './static/pitfall.gif'
 <Notes>
 
 So it looked easy right? And it is easy in most cases. However during this talk we would like
-to present what we learnt during couple of years of developing and reviewing instrumentation Go code that
+to present what we learnt during couple of years of developing and reviewing instrumentation code that
 is meant to be run on production, in close but mainly in open source.
 
 Together with Kemal wil go though a few less or more advanced issues we seen and how to resolve them.
@@ -582,11 +586,11 @@ First one! Globals.
 
 There was a saying in amazing Peter Bourgon blog post "A theory of Modern Go": magic is bad; global state is magic.
 
-This is very true also in case of Prometheus client, especially if you are instrumenting some Go package with metrics
-that your project, or maybe anyone in open source is using. This library allows you to use globals for certain simplicity
-however the usage of it leaked as a pattern which we really really want to obsolete.
+This is very true also in case of Prometheus client, especially if you are instrumenting some library with metrics
+that your project, or maybe anyone in open source is using. This Prometheus library especially Go one,
+allows you to use globals for certain simplicity, however the usage of it leaked as a pattern which we really really want to obsolete.
 
-So let's focus on where you can have magic in our metrics and what can go wrong, on example of our loadbalancer in Go.
+So let's focus on where you can have magic in our metrics and what can go wrong, on example of our loadbalancer service.
 
 </Notes>
 
@@ -1087,175 +1091,16 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's consider example impl of LB in ReverseProxy"
 
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  statusRec := newStatusRecorder(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  // Increment our counter with written status code and request method.
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's MAKE a bug in recording status!"
 
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  // Increment our counter with written status code and request method.
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
 
 ```
 
 ```go title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 
-type ServerMetrics struct {
-	requestsTotal    *prometheus.CounterVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	m := &ServerMetrics{
-		requestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "http_requests_total",
-				Help: "Tracks the number of HTTP requests.",
-			}, []string{"code", "method"},
-		),
-	}
-	reg.MustRegister(m.requestsTotal)
-	return ins
-}
-
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  // Increment our counter with written status code and request method.
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
-func TestLoadbalancer(t *testing.T) {
-	lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
-
-	for _, tcase := range []struct {
-		targets   []string
-		responses []response
-
-		expectedHost string
-		expectedCode int
-	}{
-		{
-			targets: []string{"a"},
-			responses: []response{
-				{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
-			},
-			expectedCode: 502,
-		},
-		// other cases...
-	} {
-		if ok := t.Run("", func(t *testing.T) {
-	        // Prepare mocks...
-
-			rec := httptest.NewRecorder()
-			lb.ServeHTTP(
-				rec,
-				httptest.NewRequest("GET", "http://mocked", nil),
-			)
-			testutil.Equals(t, tcase.expectedCode, rec.Code)
-			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
-		}); !ok {
-			return
-		}
-	}
-}
-
-```
-
-```diff 52,53,54,55,56,57,58,59 title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
-```
-
-```diff 62,63,64,65,66,67,68,69,70 title="Pitfall #2: Not testing" subtitle="Let's see if our unit test will catch that!"
 ```
 
 ```go 35,36,39,58,59,60,61,62,63,64,65,66,67,68,69,70,71 title="Pitfall #2: Not testing" subtitle="Nope as we don't assert any metric value."
@@ -1278,44 +1123,6 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  // BUG!
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
-func TestLoadbalancer(t *testing.T) {
-	lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
-
-	for _, tcase := range []struct {
-		targets   []string
-		responses []response
-
-		expectedHost string
-		expectedCode int
-	}{
-		{
-			targets: []string{"a"},
-			responses: []response{
-				{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
-			},
-
 			/* BUG: In this case the loadbalancer is working as expected, but metric:
 
             # HELP http_requests_total Tracks the number of HTTP requests.
@@ -1330,24 +1137,6 @@ func TestLoadbalancer(t *testing.T) {
 			*/
 			expectedCode: 502,
 		},
-		// other cases...
-	} {
-		if ok := t.Run("", func(t *testing.T) {
-	        // Prepare mocks...
-
-			rec := httptest.NewRecorder()
-			lb.ServeHTTP(
-				rec,
-				httptest.NewRequest("GET", "http://mocked", nil),
-			)
-			testutil.Equals(t, tcase.expectedCode, rec.Code)
-			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
-		}); !ok {
-			return
-		}
-	}
-}
-
 ```
 
 ```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Prometheus library allows asserting on values!"
@@ -1370,82 +1159,6 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  // BUG!
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
-import (
-	promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
-)
-
-func TestLoadbalancer(t *testing.T) {
-	lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
-
-	for _, tcase := range []struct {
-		targets   []string
-		responses []response
-
-		expectedHost string
-		expectedCode int
-	}{
-		{
-			targets: []string{"a"},
-			responses: []response{
-				{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
-			},
-
-            /* BUG: In this case the loadbalancer is working as expected, but metric:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="200", method="get"} 1
-
-              instead of:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="502", method="get"} 1
-			*/
-			expectedCode: 502,
-	    },
-		// other cases...
-	} {
-		if ok := t.Run("", func(t *testing.T) {
-	        // Prepare mocks...
-
-			rec := httptest.NewRecorder()
-			lb.ServeHTTP(
-				rec,
-				httptest.NewRequest("GET", "http://mocked", nil),
-			)
-			testutil.Equals(t, tcase.expectedCode, rec.Code)
-			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
-		}); !ok {
-			return
-		}
-	}
-}
-
-```
-
 ```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's create metrics instance and initial assertion."
 
 type ServerMetrics struct {
@@ -1465,54 +1178,8 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	reg.MustRegister(m.requestsTotal)
 	return ins
 }
-
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  // BUG!
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
-import (
-	promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
-)
-
-func TestLoadbalancer(t *testing.T) {
-    reg := prometheus.NewRegistry()
-	metrics := NewMetrics(reg)
-
-	lb := NewLoadbalancingTransport(metrics, mockedDiscovery, mockedPicker, mockedTransport)
-
     // No requests, no metric should be exposed.
 	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-
-	for _, tcase := range []struct {
-		targets   []string
-		responses []response
-
-		expectedHost string
-		expectedCode int
-	}{
-		{
-			targets: []string{"a"},
-			responses: []response{
-				{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
-			},
 
             /* BUG: In this case the loadbalancer is working as expected, but metric:
 
@@ -1530,22 +1197,6 @@ func TestLoadbalancer(t *testing.T) {
 	    },
 		// other cases...
 	} {
-		if ok := t.Run("", func(t *testing.T) {
-	        // Prepare mocks...
-
-			rec := httptest.NewRecorder()
-			lb.ServeHTTP(
-				rec,
-				httptest.NewRequest("GET", "http://mocked", nil),
-			)
-			testutil.Equals(t, tcase.expectedCode, rec.Code)
-			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
-		}); !ok {
-			return
-		}
-	}
-}
-
 ```
 
 ```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Let's add expectations for each case about metric values."
@@ -1568,88 +1219,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  // BUG!
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
-import (
-	promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
-)
-
-func TestLoadbalancer(t *testing.T) {
-    reg := prometheus.NewRegistry()
-	metrics := NewMetrics(reg)
-
-	lb := NewLoadbalancingTransport(metrics, mockedDiscovery, mockedPicker, mockedTransport)
-
     // No requests, no metric should be exposed.
 	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-
-	for _, tcase := range []struct {
-		targets   []string
-		responses []response
-
-		expectedHost string
-		expectedCode int
-
-        requestsCode502 float64
-	}{
-		{
-			targets: []string{"a"},
-			responses: []response{
-				{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
-			},
-
-            /* BUG: In this case the loadbalancer is working as expected, but metric:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="200", method="get"} 1
-
-              instead of:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="502", method="get"} 1
-			*/
-			expectedCode: 502,
-
 			requestsCode502: 1,
-	    },
-		// other cases...
-	} {
-		if ok := t.Run("", func(t *testing.T) {
-	        // Prepare mocks...
-
-			rec := httptest.NewRecorder()
-			lb.ServeHTTP(
-				rec,
-				httptest.NewRequest("GET", "http://mocked", nil),
-			)
-			testutil.Equals(t, tcase.expectedCode, rec.Code)
-			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
-		}); !ok {
-			return
-		}
-	}
 }
 
 ```
@@ -1674,81 +1246,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  // BUG!
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
-import (
-	promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
-)
-
-func TestLoadbalancer(t *testing.T) {
-    reg := prometheus.NewRegistry()
-	metrics := NewMetrics(reg)
-
-	lb := NewLoadbalancingTransport(metrics, mockedDiscovery, mockedPicker, mockedTransport)
-
     // No requests, no metric should be exposed.
 	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-
-	for _, tcase := range []struct {
-		targets   []string
-		responses []response
-
-		expectedHost string
-		expectedCode int
-
-        requestsCode502 float64
-	}{
-		{
-			targets: []string{"a"},
-			responses: []response{
-				{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
-			},
-
-            /* BUG: In this case the loadbalancer is working as expected, but metric:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="200", method="get"} 1
-
-              instead of:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="502", method="get"} 1
-			*/
-			expectedCode: 502,
-
 			requestsCode502: 1,
-		},
-		// other cases...
-	} {
-		if ok := t.Run("", func(t *testing.T) {
-	        // Prepare mocks...
-
-			rec := httptest.NewRecorder()
-			lb.ServeHTTP(
-				rec,
-				httptest.NewRequest("GET", "http://mocked", nil),
 			)
 			testutil.Equals(t, tcase.expectedCode, rec.Code)
 			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
@@ -1759,17 +1259,11 @@ func TestLoadbalancer(t *testing.T) {
  			    promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
  			 )
  			testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-
-		}); !ok {
-			return
-		}
-	}
 }
 
 ```
 
-```go 99,100,101,102,103,104,105,106,107,108 title="Pitfall #2: Not testing - Let's add tests!" subtitle="Now, test will catch our bug!"
-
+```go title="Pitfall #2: Not testing - Let's add tests!" subtitle="Now, test will catch our bug!"
 
 type ServerMetrics struct {
 	requestsTotal    *prometheus.CounterVec
@@ -1789,85 +1283,11 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-func (t *LoadBalancingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    targets := t.discovery.Targets()
-    // ...
-    for r.Context().Err() == nil {
-        target := t.picker.Pick(targets)
-        // ...
-        r.URL = target.DialAddr
-        resp, err := t.parent.RoundTrip(r)
-        // handle err, etc...
-        resp.Header.Set("X-lb-host", target.DialAddr)
-        return resp, nil
-    }
-}
-
-func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  // BUG!
-  statusRec := newBuggyStatusRecorderAlwaysCode200(w)
-  m.reverseProxy.ServeHTTP(statusRec, r)
-
-  m.metrics.requestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
-}
-
-import (
-	promtestutils "github.com/prometheus/client_golang/prometheus/testutil"
-)
-
-func TestLoadbalancer(t *testing.T) {
-    reg := prometheus.NewRegistry()
-	metrics := NewMetrics(reg)
-
 	lb := NewLoadbalancingTransport(metrics, mockedDiscovery, mockedPicker, mockedTransport)
 
     // No requests, no metric should be exposed.
 	testutil.Equals(t, 0, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-
-	for _, tcase := range []struct {
-		targets   []string
-		responses []response
-
-		expectedHost string
-		expectedCode int
-
-        requestsCode502 float64
-	}{
-		{
-			targets: []string{"a"},
-			responses: []response{
-				{host: "a", err: &net.OpError{Op: "dial", Err: syscall.ECONNREFUSED}},
-			},
-
-            /* BUG: In this case the loadbalancer is working as expected, but metric:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="200", method="get"} 1
-
-              instead of:
-
-            # HELP http_requests_total Tracks the number of HTTP requests.
-            # TYPE http_requests_total counter
-            http_requests_total{code="502", method="get"} 1
-			*/
-			expectedCode: 502,
-
 			requestsCode502: 1,
-		},
-		// other cases...
-	} {
-		if ok := t.Run("", func(t *testing.T) {
-	        // Prepare mocks...
-
-			rec := httptest.NewRecorder()
-			lb.ServeHTTP(
-				rec,
-				httptest.NewRequest("GET", "http://mocked", nil),
-			)
-			testutil.Equals(t, tcase.expectedCode, rec.Code)
-			testutil.Equals(t, tcase.expectedHost, rec.Header().Get("X-lb-host"))
-
             // === RUN   TestLoadbalancer/#00
             //       --- FAIL: TestLoadbalancer/#00 (0.00s)
             //           transport_test.go:190:
@@ -1883,11 +1303,6 @@ func TestLoadbalancer(t *testing.T) {
  			    promtestutil.ToFloat64(metrics.requestsTotal.WithLabelValues("502", "get")),
  			 )
  			testutil.Equals(t, 1, promtestutil.CollectAndCount(lb.metrics.requestsTotal))
-
-		}); !ok {
-			return
-		}
-	}
 }
 
 ```
