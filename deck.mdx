@@ -99,7 +99,7 @@ I am part of Prometheus Team and I am a co-author of Thanos project, which is a 
 With me there is Kemal...
 
 Hello everyone, my name is Kemal. I am also a software engineer in the OpenShift Monitoring team, at Red Hat.
-I love everything related to Go, Prometheus, Kubernetes, and I try to contribute to those projects as much as I can.
+I love working on things related to Go, Prometheus, Kubernetes, and I contribute to Thanos.
 
 </Notes>
 
@@ -1934,7 +1934,9 @@ In Prometheus context, the cardinality is the amount of unique time-series you h
 
 And don't forget, each unique label value, that you add to your metric, creates a new time-series.
 
-`Labels what make Prometheus strong`. However you should always watch out how you use them.
+`Labels what make Prometheus strong`.
+
+However you should always watch out how you use them.
 
 Things could get out of control pretty quickly.
 
@@ -1948,17 +1950,17 @@ Let's see an example.
 
 Let's use our usual suspect again.
 
-2. But this time, let's add an additional label to track each requests per *path*.
+1. But this time, let's add an additional label to track each requests per *path*.
 
-3. Let's check out our metrics...
+1. Let's check out our metrics...
 It looks reasonable, we just have a couple of addition series.
 
-3. Let's have a closer look! *OOPS*. That is not what we expected.
+1. Let's have a closer look! *OOPS*. That is not what we expected.
 
-We have a lot noise and random request from internet.
-Internet is not always a nice place.
+We have a lot of random request from internet, which ends up in our metrics.
 
 We shouldn't use arbitrary data as label values, such as the dynamic paths, session ids, request ids.
+
 So, **always keep track of things that you put in your labels.**
 
 If you want to track your discreet events, better to use a logging system.
@@ -2059,14 +2061,14 @@ as we've already seen on previous examples.
 
 But they are more difficult to use **correctly**.
 
-Soo, what's the problem with cardinality here?
+SO, **what's the problem with cardinality here?**
 
 Underneath, a single histogram includes a couple of counters with labels.
 A counter per bucket, plus *sum* and *count* counters for all observed values.
 
-By default histograms expose 10 buckets, so 12 counters in total.
+By default an  histogram exposes 10 buckets, that means 12 counters in total.
 
-Let's see an example.
+Let's see this on an example.
 
 </Notes>
 
@@ -2078,17 +2080,14 @@ Again let's start with adding our good old http request duration metric.
 Let's say we ran our loadbalancer for a while.
 
 1. Let's check our metrics. *It works*.
+
 	`But there's something slightly off here`, on average requests take longer than we anticipated.
 
 	We don't have enough visibility for the requests that take longer.
 
 1. So let's add some more metrics, to get more granular picture.
+
 	It's fine just a couple of more time series per histogram.
-
-1. Let's check our metrics again.
-	It looks better, however we still don't have enough visibility. Our requests still take longer.
-
-1. We still don't have enough granularity, let's add more to cover the range of our latencies.
 
 1. Now, it looks better. Let our system run for awhile.
 
@@ -2141,59 +2140,7 @@ http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 302
 
 ```
 
-```go title="Pitfall #6: Histogram Cardinality Explosion" subtitle="We need more buckets" 3,17
-
-var (
-	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120}
-)
-
-type ServerMetrics struct {
-	requestDuration  *prometheus.HistogramVec
-}
-
-// NewServerMetrics provides ServerMetrics.
-func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
-	ins := &ServerMetrics{
-		requestDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "http_request_duration_seconds",
-				Help:    "Tracks the latencies for HTTP requests.",
-				Buckets: buckets,
-			},
-			[]string{"code", "method"},
-		),
-	}
-	reg.MustRegister(ins.requestDuration)
-	return ins
-}
-
-```
-
-```go title="Pitfall #6: Histogram Cardinality Explosion"
-
-# HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
-# TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.001"} 0
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.01"} 1
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.1"} 3
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.3"} 6
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="0.6"} 6
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="1"} 6
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="3"} 8
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="6"} 30
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="9"} 33
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="20"} 38
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="30"} 39
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="60"} 41
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="90"} 45
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="120"} 47
-http_request_duration_seconds_bucket{code="200",handler="/lb",method="get",le="+Inf"} 302
-http_request_duration_seconds_sum{code="200",handler="/lb",method="get"} 3230.08239999999999999
-http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 302
-
-```
-
-```go title="Pitfall #6: Histogram Cardinality Explosion" subtitle="More, and more ..." 3
+```go title="Pitfall #6: Histogram Cardinality Explosion" subtitle="We need more buckets" 3
 
 var (
 	buckets = []float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 40, 50, 60, 90, 120, 150, 200}
@@ -2253,11 +2200,21 @@ http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 302
 
 import itisfine from './static/itisfine.jpg'
 
-<img src={itisfine} style="height: 75%; margin-top: 3%"/>
+<img src={itisfine} style="width: 90%; margin-top: 3%"/>
 
 <Notes>
 
 **It's fine, we got this covered!**
+
+Right?
+
+BOOM!💥
+
+We got an alert that warns us against increased memory consumption in our monitoring system,
+
+and we checked our metrics to see what's happening.
+
+We see this! ->
 
 </Notes>
 
@@ -2265,7 +2222,7 @@ import itisfine from './static/itisfine.jpg'
 
 <CodeSurfer>
 
-```go title="Pitfall #6: Histogram Cardinality Explosion" subtitle="Anything you add, builds up."
+```go title="Pitfall #6: Histogram Cardinality Explosion" subtitle="BOOM!💥 Anything you add builds up."
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -2354,14 +2311,12 @@ http_request_duration_seconds_bucket{code="200",handler="demo-refused-conn-somet
 http_request_duration_seconds_sum{code="200",handler="demo-refused-conn-sometimes",method="post"} 4.46e-05
 http_request_duration_seconds_count{code="200",handler="demo-refused-conn-sometimes",method="post"} 1
 
-
 ```
 
 </CodeSurfer>
 
 <Notes>
 
-We started to see increased memory consumption in our system and we checked our metrics to see what's happening.
 With histograms, cardinality multiplies very quickly!
 
 Be very considered with your histograms.
@@ -2382,9 +2337,10 @@ Which is actually gets me to my next point.
 
 Histograms are great to collect observations from your system.
 
-They can be used to produce arbitrary quantile estimations and to estimate the mean.
+They can be used to produce **arbitrary quantile estimations**!
 
 Because they accumulate their observation into buckets,
+
 they have significantly **fewer storage requirements** compare to storing raw data.
 
 As a result performance and the **accuracy** of your histograms tightly depend on your bucket layout.
@@ -2404,7 +2360,8 @@ Again let's start with adding our good old http request duration metric.
 1. Let's check our metrics. So what's wrong here.
 
 	Prometheus implements histograms as **cumulative histograms**.
-	*This means each bucket is a counter of observations less than or equal to your specified boundary*.
+
+	*WHICH means each bucket is a counter of observations, less than or equal to your specified boundary*.
 	Each bucket contains the counts of all prior buckets.
 
 	As you see in this example, we are observing wrong interval for request durations.
@@ -2419,15 +2376,15 @@ Again let's start with adding our good old http request duration metric.
 
 	**Accuracy** is controlled by the granularity of your bucket layout.
 
-	On the other hand, adding more bucket *increases cardinality by magnitudes*.
+	*However*, On the other hand, adding more bucket **increases cardinality by magnitudes**.
 
 	Which leads performance problems.
 
 My suggestion define your service level objectives and create your buckets accordingly.
 
-For example, set the `highest bucket` to whatever **value that violates your SLAs**
+**For example**, set the `highest bucket` to the **value that violates your SLAs**,
 
-and don't care about requests that take longer than that.
+and don't care about the rest of the high latency requests.
 
 </Notes>
 
@@ -2564,23 +2521,23 @@ http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 49
 
 	You have to know what's going on with your application on production.
 
-	Determine your service level objectives.
+	**Determine your service level objectives.**
 
 	Build alerts on them.
 
-	Build dashboards on them.
+	`Build dashboards on them.`
 
-2. Now, since you have also alerts and dashboards in place.
+1. Now, since you have also alerts and dashboards in place.
 
-	You rely on them. They are liability.
+	You rely on them.
+
+	**They are liability.**
 
 	Test them as you test your business logic.
 
-3. Last but not least,
+1. Last but not least,
 
-	**Avoid global state**, make your life easier, *for yourself*.
-
-	"magic is bad; global state is magic" by Peter Bourgon
+	**Avoid global state**, make your life easier, **for yourself**.
 
 </Notes>
 
