@@ -1554,13 +1554,15 @@ Now I will let Kemal to talk about further Pitfals:
 
 <Notes>
 
-There are a some useful high-level methods on what metrics you should define, to properly monitor your ONLINE system.
+There are some useful high-level methods on what metrics you should define TO *properly monitor your ONLINE system*.
 
 1. The four golden signals from SRE book, USE method, RED method.
 
 	There are certain advantages to follow them:
 
-	- They help to ensure you have main signals upfront, for potential debugging or alerting needs.
+	- They help to ensure you have main signals upfront, FOR potential debugging or alerting needs.
+
+	- They help you to create a common ground to communicate with others.
 
 	- They help to reuse common alerts, recording rules and dashboards. For example, monitoring-mixins.
 
@@ -1673,7 +1675,7 @@ is just awesome.
 
 <Notes>
 
-**Of course, one of the most common pitfall is about naming...**
+**Of course, one of the most common pitfall is about naming**
 
 ...
 
@@ -1687,7 +1689,7 @@ is just awesome.
 
 <Notes>
 
-Because you know naming things is hard!
+Because, *you know*, naming things is hard!
 
 </Notes>
 
@@ -1701,7 +1703,7 @@ Because you know naming things is hard!
 
 <Notes>
 
-But lucky for us we have an official documentation for naming `metrics`.
+But lucky for us, we have an official documentation, FOR naming `metrics`.
 
 **Use it!** It's really helpful.
 
@@ -1716,6 +1718,7 @@ A couple of points to highlight from the official documentation.
 1. Names should have a suffix describing the **base** unit in plural form.
 
 1. An _accumulating_ counter has to have *_total* as a suffix, in addition to the unit.
+
 Actually, with new **OpenMetrics** standards this will become mandatory.
 
 1. Put *_info* suffix at the end, for the metrics that provides metadata about your running system.
@@ -1778,7 +1781,7 @@ Let's use the same metric from previous examples, the one that tracks HTTP reque
 
 1. At a certain point in time, for whatever reason, you decide to change your metric and you add *_protocol_* in the name.
 
-1. **NOW** This alert will never fire but also will not fail!
+1. **NOW** This alert will never fire but also WON'T fail!
 **renaming** can cause issues like this, in Alerts, Recording rules, Dashboards and possibly more...
 
 So be consistent, be careful with the names.
@@ -2597,7 +2600,7 @@ Feel free to ask questions.
 * [Prometheus - client_go](https://godoc.org/github.com/prometheus/client_golang/prometheus)
 * [Thanos](https://thanos.io)
 * [Why globals are magic](https://peter.bourgon.org/blog/2017/06/09/theory-of-modern-go.html)
-* [Red Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services)
+* [RED Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services)
 * [Prometheus - Histogram](https://prometheus.io/docs/practices/histograms/)
 * [Prometheus Histograms – Past, Present, and Future](https://www.youtube.com/watch?v=7sQFkaMCyEI)
 * [Roboust Perception Blog](https://www.robustperception.io/blog)
