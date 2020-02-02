@@ -1573,8 +1573,7 @@ There are a some useful high-level methods on what metrics you should define, to
 
 	- They help to ensure you have main signals upfront, for potential debugging or alerting needs.
 
-	- They help to reuse common alerts, recording rules and dashboards. For example, monitoring-mixin project.
-	If you are following the same method.
+	- They help to reuse common alerts, recording rules and dashboards. For example, monitoring-mixins.
 
 2. Let's focus on RED method as an example: R stands for request/sec, E for error, D for the duration.
 
@@ -1667,8 +1666,11 @@ Let's see an example. We have an `http_requests_total` metric to track the numbe
 Does our Server Metrics satisfy RED method?
 
 1. It certainly counts number of requests per method and status code.
+
 1. We can extract `Errors` easily by checking status code.
+
 1. But we don't have anything to track request duration!
+
 1. By adding a histogram that observes latency of the requests, we can satisfy RED method.
 
 Now our loadbalancer has consistent metrics and can reuse RED dashboards, alerts and recording rules, which
@@ -1702,7 +1704,7 @@ Because you know naming things is hard!
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;"> There is an official documentation on naming conventions</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">There is an official documentation on naming conventions</h2>
 
 <div style="font-size: 80%; text-align: center">
 	<h6><a>https://prometheus.io/docs/practices/naming/#metric-and-label-naming</a></h6>
@@ -1769,11 +1771,19 @@ build_info
 
 ---
 
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Pitfall #4: Naming - Stability</h2>
+
 <Notes>
 
 There is one other important aspect of naming: **it's stability**.
 
-1. Let's use the same metric from previous examples, the one that tracks HTTP requests.
+</Notes>
+
+---
+
+<Notes>
+
+Let's use the same metric from previous examples, the one that tracks HTTP requests.
 
 1. Let's build an alert using it.
 
@@ -1781,7 +1791,8 @@ There is one other important aspect of naming: **it's stability**.
 
 1. **NOW** This alert will never fire but also will not fail!
 **renaming** can cause issues like this, in Alerts, Recording rules, Dashboards and possibly more...
-So be consistent, be careful.
+
+So be consistent, be careful with the names.
 
 </Notes>
 
@@ -1946,7 +1957,7 @@ Let's see an example.
 
 <Notes>
 
-1. Let's use our usual suspect again.
+Let's use our usual suspect again.
 
 2. But this time, let's add an additional label to track each requests per *path*.
 
@@ -2064,7 +2075,7 @@ Soo, what's the problem with cardinality here?
 Underneath, a single histogram includes a couple of counters with labels.
 A counter per bucket, plus *sum* and *count* counters for all observed values.
 
-By default they expose 10 buckets, so 12 counters.
+By default histograms expose 10 buckets, so 12 counters in total.
 
 Let's see an example.
 
@@ -2074,21 +2085,23 @@ Let's see an example.
 
 <Notes>
 
-1. Again let's start with adding our good old http request duration metric with a default set of labels.
+Again let's start with adding our good old http request duration metric.
 Let's say we ran our loadbalancer for a while.
 
-1. Let's check our metrics. It works.
-But there's something slightly off here, on average requests take longer than we anticipated.
+1. Let's check our metrics. *It works*.
+	`But there's something slightly off here`, on average requests take longer than we anticipated.
+
+	We don't have enough visibility for the requests that take longer.
 
 1. So let's add some more metrics, to get more granular picture.
-It's fine just a couple of more time series per histogram.
+	It's fine just a couple of more time series per histogram.
 
 1. Let's check our metrics again.
-It looks better, however we still don't have enough visibility. Our requests still take longer.
+	It looks better, however we still don't have enough visibility. Our requests still take longer.
 
-1. We still don't have enough granularity, let's add more to cover our latencies.
+1. We still don't have enough granularity, let's add more to cover the range of our latencies.
 
-1. Now, it looks better. Let our system run.
+1. Now, it looks better. Let our system run for awhile.
 
 </Notes>
 
@@ -2380,10 +2393,10 @@ Which is actually gets me to my next point.
 
 Histograms are great to collect observations from your system.
 
-They can be used to produce arbitrary quantile estimations and the mean.
+They can be used to produce arbitrary quantile estimations and to estimate the mean.
 
 Because they accumulate their observation into buckets,
-they have significantly fewer storage requirements compare to storing raw data.
+they have significantly **fewer storage requirements** compare to storing raw data.
 
 As a result performance and the **accuracy** of your histograms tightly depend on your bucket layout.
 
@@ -2395,14 +2408,14 @@ Let's see some examples.
 
 <Notes>
 
-1. Again let's start with adding our good old http request duration metric.
+Again let's start with adding our good old http request duration metric.
 
 1. Let's create an arbitrary bucket layout that we think could work.
 
 1. Let's check our metrics. So what's wrong here.
 
-	Prometheus implements histograms as cumulative histograms.
-	This means each bucket is a counter of observations less than or equal to your specified boundary.
+	Prometheus implements histograms as **cumulative histograms**.
+	*This means each bucket is a counter of observations less than or equal to your specified boundary*.
 	Each bucket contains the counts of all prior buckets.
 
 	As you see in this example, we are observing wrong interval for request durations.
@@ -2411,11 +2424,11 @@ Let's see some examples.
 
 	By using one of the convenience methods from Prometheus client library.
 
-1. So coming up with a good bucket layout is hard.
+1. Looks better.
 
-	You need to **know your distribution**.
+	So coming up with a good bucket layout is hard. You need to **know your distribution**.
 
-	Accuracy is controlled by the granularity of your bucket layout.
+	**Accuracy** is controlled by the granularity of your bucket layout.
 
 	On the other hand, adding more bucket *increases cardinality by magnitudes*.
 
@@ -2423,8 +2436,9 @@ Let's see some examples.
 
 My suggestion define your service level objectives and create your buckets accordingly.
 
-For example, set the highest bucket to whatever value that violates your SLAs and
-don't care requests that take longer than that.
+For example, set the `highest bucket` to whatever **value that violates your SLAs**
+
+and don't care about requests that take longer than that.
 
 </Notes>
 
@@ -2486,7 +2500,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 
 ```
 
-```go title="Pitfall #7: Poorly chosen Histogram buckets" subtitle="So what's wrong here."
+```go title="Pitfall #7: Poorly chosen Histogram buckets" subtitle="So what's wrong here?"
 
 # HELP http_request_duration_seconds Tracks the latencies for HTTP requests.
 # TYPE http_request_duration_seconds histogram
@@ -2557,17 +2571,24 @@ http_request_duration_seconds_count{code="200",handler="/lb",method="get"} 49
 
 <Notes>
 
-1. Observe your applications, monitoring is not optional.
+1. Observe your applications, *monitoring is not optional*.
+
 	You have to know what's going on with your application on production.
+
 	Determine your service level objectives.
+
 	Build alerts on them.
+
 	Build dashboards on them.
 
 2. Now, since you have also alerts and dashboards in place.
+
 	You rely on them. They are liability.
+
 	Test them as you test your business logic.
 
 3. Last but not least,
+
 	**Avoid global state**, make your life easier, *for yourself*.
 
 	"magic is bad; global state is magic" by Peter Bourgon
