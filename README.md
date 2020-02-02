@@ -2,6 +2,14 @@
 
 _Live Example: https://are-you-testing-your-observability.now.sh_
 
+## Events
+
+### [GoDays Berlin 2020](https://www.godays.io/conferenceday1)
+  * Recording (TBA)
+  
+### [FOSDEM 2020](https://fosdem.org/2020/schedule/event/testing_observability/)
+  * Recording (TBA)
+
 ## Keyboard Shortcuts
 
 | Key         | Description                                  |
