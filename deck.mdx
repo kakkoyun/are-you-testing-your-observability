@@ -21,14 +21,17 @@ export const themes = [
 
 <CodeSurfer>
 
-```go
+```go 4,5,6,7,8,9,10
 
+    # HELP talks_total Total number of talks given.
+    # TYPE talks_total counter
 	talks_total{title="    Are you testing your Observability?    "} 2
 	talks_total{subtitle="       --- Metrics Edition ---       "} 2
 
 
 
-	talks_total{conference="FOSDEM", when="02.02.2020", where="Brussels"} 1
+	talks_total{conf="FOSDEM", when="02.02.2020", where="Brussels"} 1
+
 ```
 
 </CodeSurfer>
@@ -114,22 +117,20 @@ I love everything related to Go, Prometheus, Kubernetes, and I try to contribute
 
 Our job is focused on building scalable Observability solutions and platforms for OpenShift.
 But also as one of the major part of our work is maintaining Prometheus and Thanos projects on a daily basis.
+
 Those projects are focused on enabling monitoring via metrics for infrastructure, server side applications e.g
-in microservices running on Kubernetes. While we work on enabling metrics from backend side, we also
-are part of the client side of metrics, so applications that are being monitored. And this is the part we will be focusing
-on today.
+for microservices running on Kubernetes. They collect, store and allow using metrics
+and while I think it's quite fascinating how it's done, today we will look closer on the client side of the metric
+system. We will focus on how to properly instrument, so add more signals to the application in order to increase observability
+, help us understand better the health of production applications, services we are responsible for.
 
 </Notes>
 
 ---
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Let's implement an HTTP L7 loadbalancer! ❤</h2>
-
----
-
 import d01 from './static/d01.png'
 
-<h2 style="text-align: center; margin: 0 10px 0 10px;">Because why not?</h2>
+<h2 style="text-align: center; margin: 0 10px 0 10px;">Let's implement an HTTP L7 loadbalancer! ❤</h2>
 
 <Appear>
 	<Image src={d01} size='contain'/>
@@ -137,16 +138,16 @@ import d01 from './static/d01.png'
 
 <Notes>
 
-Today we have a fun task! We will talk today about building loadbalancer. Kind of.
+So.. let's have a fun task! We will talk today about building loadbalancer. Kind of.
 
-For demo purposes let's imagine we want to implement application level HTTP loadbalancer. Let's say in Go, but
-programming language does not matter here.
+For demo purposes let's imagine we want to implement application level HTTP loadbalancer. Let's say, we will do it in Go,
+but programming language does not matter here.
 
 1) So let's say we implemented transparent loadbalancer as presented in this diagram.
 From high level design we have couple of Go components.
 
 - Single HTTP server that implements ServeHTTP method, so handler via awesome ReverseProxy in standard httputil package.
-- that ReverseProxy allows us to inject custom Transport, so RoundTripper interface.
+- that ReverseProxy allows us to inject custom Transport
 - We inject there our load balancing RoundTipper implementation called lbtranport, which is internally
 using then few components:
 -- Discoverer which gives us targets to proxy / loadbalance request to
@@ -202,7 +203,7 @@ import d05 from './static/d05.png'
 
 <Notes>
 
-Is round robin picker, picking in round robin matter?
+And what about round robin picker logic? Is it, picking in round robin matter?
 Is 1/3 of all requests actually going to replica 2? What's was the distribution of request over time? Was it fair?
 
 </Notes>
@@ -251,7 +252,7 @@ import d09 from './static/d09.png'
 As you can see there are massive amount of questions that would be not answered when running the service like this on
 production, without proper monitoring.
 
-That's why in SRE book you will find monitoring as the foundation of any system, BEFORE even the system itself!
+That's why in Site Reliability Engineering Book book you will find monitoring as the foundation of any system, BEFORE even the system itself!
 
 As you might be familiar, some monitoring signals we can introduce are: traces, logs and metrics.
 Guess which signal will give us answer to our questions like distribution of requests or histogram of tail latency?
@@ -285,11 +286,11 @@ Answer that is in comparison to logs and traces:
 Near Real Time
 Clear and Actionable, so you can alert on those.
 
-In practice metrics should be the first item on monitoring list that you should do if you care to run your service reliably.
+In practice metrics probably should be the first item on monitoring list that you should do if you care to run your service reliably.
 
 2) Why Prometheus though? Well I might be bias but Prometheus is currently one of the simplest and
 cheapest option for collecting, storing and querying metrics as well as reliable alerting.
-It is part of CNCF, fits for small solution as well as for bigger ones with help of cloud native projects like Thanos, Cortex, m3db and others
+It is part of CNCF, fits for small solution as well as for bigger ones with help of cloud native projects like Cortex, M3db or Thanos and others.
 
 </Notes>
 
@@ -330,8 +331,8 @@ We can introduce this metric really in few simple steps.
 
 ```go title="Server HTTP request counter" subtitle="Import Prometheus Go client package."
 
-# You can find list of all available clients for 18 programming languages here:
-# https://prometheus.io/docs/instrumenting/clientlibs/#client-libraries
+// You can find list of all available clients for 18 programming languages here:
+// https://prometheus.io/docs/instrumenting/clientlibs/#client-libraries
 import "github.com/prometheus/client_golang/prometheus"
 
 ```
@@ -441,42 +442,9 @@ srv := &http.Server{Handler: mux}
 
 ```
 
-</CodeSurfer>
+```go title="Server HTTP request counter" subtitle="Metric is exposed on /metrics"
 
-<Notes>
-
-1) First of all we have to import Prometheus Go client library. We will show here an
-example on how to add metric in Go language, but it's equally simple in other languages as well.
-Similar libraries exists in 18 other programming languages.
-
-However, we are focusing here on Go, since we are working with Go already 5-6years.
-
-2) To add server HTTP metrics, As a next step we need to define variable for the our counter of requests. We pick a name, a description
-and certain "labels" which will be our dimensions for this counter. Each unique value in any of those labels will
-result in totally new series in Prometheus system.
-
-3) Next step is to actually count our requests. Let's create a simple wrapper of http server which will increment
-the counter with the status code that the server returned and requested method.
-
-4) Something that is easy to forget is another step: The counter has to be registered somewhere in order
-to be exposed for Prometheus. Let's do this once in `init` function and register it in GLOBAL
-Prometheus registry.
-
-Let's focus on what we accomplish by registering this metric. It's important for the next step which is
-
-5) HTTP handler for metric page. It serves simple text page with all metrics.
-Once we add that to our loadbalancer, our server  is correctly exposing the http_requests_total counter
-we created to the outside world.
-
-</Notes>
-
----
-
-import graph_requests from './static/graph-requests.png'
-
-<CodeSurfer>
-
-```go 4,6 title="From code to graph" subtitle="We defined & instrumented our metric."
+import "github.com/prometheus/client_golang/prometheus"
 
 var (
 	serverRequestsTotal = prometheus.NewCounterVec(
@@ -487,17 +455,28 @@ var (
 	)
 )
 
-```
+// Top level ServeHTTP handler.
+func ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	statusRec := newStatusRecorder(w)
+	next.ServeHTTP(statusRec, r)
 
-```go 4,6,10,13,14 title="From code to graph" subtitle="It is now exposed under /metrics."
-var (
-	serverRequestsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "Tracks the number of HTTP requests.",
-		}, []string{"code", "method"},
-	)
-)
+	// Increment our counter with written status code and request method.
+	serverRequestsTotal.WithLabelValues(statusRec.Status(), r.Method)).Add(1)
+}
+
+func init() {
+	prometheus.MustRegister(serverRequestsTotal)
+}
+
+mux := http.NewServeMux()
+mux.Handle("/metrics", promhttp.Handler())
+mux.Handle("/lb", ...)
+
+// Other handlers...
+
+srv := &http.Server{Handler: mux}
+
+// Run server...
 
 // Part of response from /metrics HTTP endpoint.
 # HELP http_requests_total Tracks the number of HTTP requests.
@@ -511,14 +490,35 @@ http_requests_total{code="500", method="get"} 46
 
 <Notes>
 
-1) How we can now use our metric? As you remember we defined this metric like this and we increment it every HTTP request.
-2) Loadbalancer now serves /metrics page which exposes our metrics in Prometheus supported text format.
-As you can see each code and method are a separate counter, with mostly successes.
+1) We will show here an example on how to quickly add metric in Go language. However it's equally simple in other languages as well.
+
+So let's first import Go client library. Similar libraries exists in 18 other programming languages.
+
+2) To add server HTTP metrics, As a next step we need to define variable for the our counter of requests. We pick a name, a description
+and certain "labels" which will be our dimensions for this counter. Each unique value in any of those labels will
+result in totally new series in Prometheus system.
+
+3) Next step is to actually count our requests. Let's create a simple wrapper of http server which will increment
+the counter with the status code that the server returned and requested method.
+
+4) Something that is easy to forget is another step: The counter has to be registered somewhere in order
+to be exposed for Prometheus. Let's do this once in `init` function and register it in GLOBAL
+Prometheus registry.
+
+Registry stores all registered metrics that will be exposed to Prometheus thanks tp
+
+5) HTTP handler for metric page. It serves simple text page with all metrics.
+
+6) Once we add that to our loadbalancer, our server is correctly exposing the http_requests_total counter
+we created. As you can see each code and method are a separate counter, with mostly successes.
+
+And this is exactly the text format that Prometheus expects..
 
 </Notes>
 
 ---
 
+import graph_requests from './static/graph-requests.png'
 import d10 from './static/d10.png'
 
 <h2 style="text-align: center; margin: 0px 10px 0 10px;">Prometheus can now collect metrics from our Loadbalancer</h2>
@@ -1076,7 +1076,7 @@ import d12 from './static/d12.png'
 <Notes>
 
 So let's take our loadbalancer, again and newly added HTTP request total counter.
-We are solid 10x developers right, so we want to test our code, so we wrote
+We are solid 10x developers right, so we want to test our code properly, so we wrote
 some unit test!
 
 </Notes>
@@ -1091,11 +1091,13 @@ import d13 from './static/d13.png'
 
 <Notes>
 
-And yes, it involves Mocking the Discoverer and Round Robin Picker.
-Mocking our Replicas for some case like, for example all replica being down
-and not available.
+So the test goes like this..
 
-And sending few mocked HTTP requests against that.
+We mock the Discoverer and Round Robin Picker.
+We mock our Replicas for certain test case, for example something simple: all replicas, all targets
+are down and not available.
+
+Last but not the lease we will be sending few mocked HTTP requests against that.
 
 </Notes>
 
@@ -1109,10 +1111,9 @@ import d14 from './static/d14.png'
 
 <Notes>
 
-So we run this test, we run 3 request, we assert that response is 502, so Bad Gateway, we could
-not loadabalance - expected error case that can happen.
+So we run out test, we run 3 request, we assert that response is 502, so Bad Gateway. This is what we
+expect as a response from loadbalancer as no underlying backend can serve the response.
 
-And we are good, we can test different cases in similar way, all passed and we are fine, right?
 </Notes>
 
 ---
@@ -1122,18 +1123,16 @@ And we are good, we can test different cases in similar way, all passed and we a
 ```go title="Pitfall #2: Not testing" subtitle="How it looks in Go code?"
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
 }
 
 ```
 
-```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+```go title="Pitfall #2: Not testing" subtitle="Send 3x HTTP Requests"
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
     // Send 3x HTTP requests.
     rec1 := httptest.NewRecorder()
@@ -1147,11 +1146,10 @@ func TestLoadbalancer(t *testing.T) {
 
 ```
 
-```go title="Pitfall #2: Not testing" subtitle="Let's verify correct metric instrumentation!"
+```go title="Pitfall #2: Not testing" subtitle="Assert 3x responses with 502 status code."
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
     // Send 3x HTTP requests.
     rec1 := httptest.NewRecorder()
@@ -1174,8 +1172,12 @@ func TestLoadbalancer(t *testing.T) {
 
 <Notes>
 
-1) Ok, so let's see how it looks in our Go code! And Let's take our http requests example.
-2) We then create a unit test, Send 3 HTTP requests, Assert 3x responses 502 status code.. and all good!
+1) Ok, so let's see how it looks in our Go code!
+2) We then create a unit test,
+3) Send 3 HTTP requests,
+3) Assert 3x responses 502 status code.. and all good!
+
+We are good, we can test different cases in similar way, everything passed and we are fine, right?
 
 </Notes>
 
@@ -1197,8 +1199,8 @@ instrument it with 200 HTTP request code.
 Now what you can see.. our unit test passed just fine, however the actual metric exposed
 to Prometheus shows incorrect information.
 
-You can think that this is not a big deal, just some analytics will mislead. Well it is actually
-serious.
+You can think that this is not a big deal, just some analytic guys will be a little bit mislad.
+Well it can be actually, very dangerous bug.
 
 </Notes>
 
@@ -1206,9 +1208,9 @@ serious.
 
 <CodeSurfer>
 
-```go title="Pitfall #2: Not testing" subtitle="Alert for too many errors will be missed."
+```go title="Pitfall #2: Not testing" subtitle="Alert for too many errors will be missed!"
 
-alert: HttpTooMany502Errors
+alert: TooManyHTTP502Errors
   expr: |
     sum(rate(http_requests_total{code="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
@@ -1227,7 +1229,11 @@ alert: HttpTooMany502Errors
 
 <Notes>
 
-Imagine this alert, it's one the...
+Imagine very popular alert like this: TooManyHTTP502Errors. We expect this to be triggered, and notify us, maybe
+even during the night, we users sees lot's of errors from our loadalancer. It's very common symptom alert.
+
+Now with out bug, our metric has incorrect code, so if the incident happens we are not notified and alerting is suddenly
+unreliable. This is really bad situation.
 
 </Notes>
 
@@ -1241,7 +1247,11 @@ import d16 from './static/d16.png'
 
 <Notes>
 
-What we need to do, is actually verify more - so check if we instrumented out metric well!
+So let's extend out test, with few extra steps we can verify more - so check if we instrumented out metric well!
+
+So first let's assert cardinality is 0, so nothing was increment if no traffic was there - that makes sense
+Do requests, assert respone code, and then also check cardinality. We expect only single metric 502
+Now we check the value of this metric. Since we made 3 requests and all failed with 502, we expect number 3.
 
 </Notes>
 
@@ -1292,8 +1302,7 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 }
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
     // Send 3x HTTP requests.
     rec1 := httptest.NewRecorder()
@@ -1337,8 +1346,7 @@ import (
 )
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
     // Assert 0 cardinality for http_requests_total{}
     // No requests, no metric should be exposed.
@@ -1386,8 +1394,7 @@ import (
 )
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
     // Assert 0 cardinality for http_requests_total{}
     // No requests, no metric should be exposed.
@@ -1438,8 +1445,7 @@ import (
 )
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
     // Assert 0 cardinality for http_requests_total{}
     // No requests, no metric should be exposed.
@@ -1494,8 +1500,7 @@ import (
 )
 
 func TestLoadbalancer(t *testing.T) {
-    // ...
-    lb := NewLoadbalancingTransport(nil, mockedDiscovery, mockedPicker, mockedTransport)
+    lb := NewLoadbalancingTransport(..., notAvailableBackends)
 ​
     // Assert 0 cardinality for http_requests_total{}
     // No requests, no metric should be exposed.
@@ -1538,10 +1543,18 @@ func TestLoadbalancer(t *testing.T) {
 
 <Notes>
 
-1) TODO
+1) And let's do the same in the code! Let's get beck to our Server Metric struct with http_requests_total
+2) The we had our test as it was.
+3) Let's add handy promtestutil package and set our first assertion, 0 cardinality of our metric being 0, thanks
+to CollectAndCount
+4) After we performed requests we are asserting cardinality 1
+5) And then we make sure our metric has value 3 for 502 code
+6) Thanks for of if we would run this test we can detect our bug super quickly. Avoiding surprises.
 
+As you hopefully see this is really important.
 We really recommend to extend your normal tests with metrics assertion for all your crucial metrics.
 
+Now I will let Kemal to talk about further Pitfals:
 </Notes>
 
 ---
@@ -1830,9 +1843,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-alert: HttpToMany502Errors
+alert: TooManyHTTP502Errors
   expr: |
-    sum(rate(http_requests_total{status="502"}[1m])) /
+    sum(rate(http_requests_total{code="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
   for: 5m
   labels:
@@ -1840,7 +1853,7 @@ alert: HttpToMany502Errors
   annotations:
     summary: "HTTP errors 502 (instance {{ $labels.instance }})"
     description: |
-      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
+      "Too many HTTP requests with code 502 (> 5%)\n  VALUE = {{ $value }}\n
       LABELS: {{ $labels }}"
 
 ```
@@ -1865,9 +1878,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 	return ins
 }
 
-alert: HttpToMany502Errors
+alert: TooManyHTTP502Errors
   expr: |
-    sum(rate(http_requests_total{status="502"}[1m])) /
+    sum(rate(http_requests_total{code="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
   for: 5m
   labels:
@@ -1875,7 +1888,7 @@ alert: HttpToMany502Errors
   annotations:
     summary: "HTTP errors 502 (instance {{ $labels.instance }})"
     description: |
-      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
+      "Too many HTTP requests with code 502 (> 5%)\n  VALUE = {{ $value }}\n
       LABELS: {{ $labels }}"
 
 ```
@@ -1901,9 +1914,9 @@ func NewServerMetrics(reg prometheus.Registerer) *ServerMetrics {
 }
 
 ## BOOM!💥 This alert will never fire but also will not fail!
-alert: HttpToMany502Errors
+alert: TooManyHTTP502Errors
   expr: |
-    sum(rate(http_requests_total{status="502"}[1m])) /
+    sum(rate(http_requests_total{code="502"}[1m])) /
       sum(rate(http_requests_total[1m])) * 100 > 5
   for: 5m
   labels:
@@ -1911,7 +1924,7 @@ alert: HttpToMany502Errors
   annotations:
     summary: "HTTP errors 502 (instance {{ $labels.instance }})"
     description: |
-      "Too many HTTP requests with status 502 (> 5%)\n  VALUE = {{ $value }}\n
+      "Too many HTTP requests with code 502 (> 5%)\n  VALUE = {{ $value }}\n
       LABELS: {{ $labels }}"
 
 ```
