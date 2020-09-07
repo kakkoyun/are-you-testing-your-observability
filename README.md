@@ -8,6 +8,7 @@ _Live Example: https://are-you-testing-your-observability.now.sh_
   * [Recording](https://youtu.be/LU6D5cNeHks)
   
 ### [FOSDEM 2020](https://fosdem.org/2020/schedule/event/testing_observability/)
+  * https://archive.fosdem.org/2020/schedule/event/testing_observability/
   * [Recording](https://video.fosdem.org/2020/UD2.120/testing_observability.mp4)
 
 ## Keyboard Shortcuts
